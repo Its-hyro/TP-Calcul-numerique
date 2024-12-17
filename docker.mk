@@ -1,6 +1,6 @@
 #######################################
 # docker.mk
-# Options pour l'environnement Docker
+# Options for docker environment
 #######################################
 CC=gcc
 LIBSLOCAL=-L/usr/lib -llapack -lblas -lm
