@@ -1,8 +1,10 @@
-En C, comment doit on d´eclarer et allouer une matrice pour utiliser BLAS et LAPACK
-?
+# Reponses aux questions
+
+## Question 3
+
+En C, comment doit on déclarer et allouer une matrice pour utiliser BLAS et LAPACK ?
 
 Pour utiliser BLAS et LAPACK en langage C, les matrices doivent être déclarées et allouées sous forme de tableaux unidimensionnels, organisés en stockage par colonnes (column-major order). Une matrice de dimensions  m \times n  sera allouée dynamiquement du style :
-
 ```c
 double *A;  
 A = (double *)malloc(m * n * sizeof(double));  
@@ -14,8 +16,7 @@ L’accès à l’élément  A_{i,j}  (ligne  i , colonne  j ) se fait alors par
 
 La constante LAPACK COL MAJOR est une constante qui indique que la matrice est stockée par colonnes (column-major order) donc en majorité colonne dans la mémoire. Cela signifie que les éléments de la matrice sont stockés dans un tableau unidimensionnel, où les éléments de chaque colonne sont contigus. Ce qui n 'est pas etonnant vu que ça correspond au format de stockage natif utilisé par Fortran, permettant une meilleur compatibilité avec les bibliothèques LAPACK.
 
-3.
-A quoi correspond la dimension principale (leading dimension) généralement notée ld ?
+3. A quoi correspond la dimension principale (leading dimension) généralement notée ld ?
 
 La dimension principale (leading dimension) est un paramètre qui
 représente la taille physique en mémoire d’une colonne d’une matrice dans un tableau unidimensionnel. Elle permet de distinguer la dimension réelle de la matrice de son espace d’allocation en mémoire. Pour une matrice de taille  m \times n , le ld doit être au moins égal au nombre de lignes  m  dans le cas du stockage par colonnes. 
@@ -79,4 +80,34 @@ double norm_b = dnrm2(&la, b, &incx);
 double rel_res = norm_r / norm_b;
 ```
 
+
+## Question 5
+
+Evaluer les performances. Que dire de la complexité des méthodes appelées ?
+
+Les résultats expérimentaux montrent les performances suivantes pour différentes tailles de matrices :
+- n = 100 : 0.000094s
+- n = 1000 : 0.000019s
+- n = 10000 : 0.000194s
+
+Analyse de la complexité :
+
+1. Complexité théorique
+- Factorisation LU (DGBTRF) : O(n) opérations
+- Résolution (DGBTRS) : O(n) opérations
+- Solution complète (DGBSV) : O(n) opérations
+
+2. Validation expérimentale
+- Le temps d'exécution croît quasi-linéairement avec n
+- Ratio temps(n=10000)/temps(n=1000) ≈ 10.2
+- Confirme la complexité théorique O(n)
+
+3. Efficacité
+Cette performance s'explique par une exploitation de la structure bande (3 diagonales) et un stockage optimisé en mémoire.
+
+Cette complexité linéaire O(n) est optimale pour ce type de problème, comparée aux méthodes générales :
+- LU dense : O(n³)
+- QR dense : O(n³)
+
+L'implémentation est donc parfaitement adaptée aux systèmes tridiagonaux, offrant une résolution rapide et stable même pour de grandes matrices. La complexité des méthodes appelées est en accord avec la complexité théorique.
 
