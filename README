@@ -37,3 +37,11 @@ Here:
 $ make run_testenv
 $ make run_tpPoisson1D_iter
 $ make run_tpPoisson1D_direct
+
+Pour les questions, voir le fichier Reponses_question.md
+pour executer le programme:
+docker build -t tp_poisson -f docker/Dockerfile .
+docker run -it tp_poisson
+ensuite, pour compiler les tests, utiliser la commande:
+make run
+

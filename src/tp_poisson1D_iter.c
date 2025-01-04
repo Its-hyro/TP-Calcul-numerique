@@ -91,6 +91,37 @@ int main(int argc,char *argv[])
   /* Solve with Richardson alpha */
   if (IMPLEM == ALPHA) {
     richardson_alpha(AB, RHS, SOL, &opt_alpha, &lab, &la, &ku, &kl, &tol, &maxit, resvec, &nbite);
+    printf("\nRichardson :\n");
+    printf("Nombre d'itérations : %d\n", nbite);
+    printf("Résidu final : %e\n", resvec[nbite-1]);
+    
+    // Analyse de la convergence
+    printf("\nAnalyse de la convergence :\n");
+    printf("Iteration |    Résidu    | Ratio de convergence\n");
+    printf("-----------------------------------------\n");
+    for(int i = 0; i < nbite; i += nbite/5) {  // Affiche ~5 points
+        double ratio = (i > 0) ? resvec[i]/resvec[i-1] : 0.0;
+        printf("%9d | %11.1e | %19.2f\n", i, resvec[i], ratio);
+    }
+    printf("%9d | %11.1e | %19.2f\n", nbite-1, resvec[nbite-1], 
+           resvec[nbite-1]/resvec[nbite-2]);
+    
+    // Affichage des solutions pour comparaison
+    printf("\nComparaison des solutions :\n");
+    printf("     X     |  Analytique  |  Richardson  |   Différence\n");
+    printf("------------------------------------------------\n");
+    for(int i = 0; i < la; i++) {
+        printf("%9.6f | %11.6f | %11.6f | %11.6f\n", 
+               X[i], EX_SOL[i], SOL[i], fabs(EX_SOL[i] - SOL[i]));
+    }
+    
+    // Calcul de l'erreur par rapport à la solution analytique
+    relres = relative_forward_error(SOL, EX_SOL, &la);
+    printf("\nErreur relative par rapport à la solution analytique : %e\n", relres);
+    
+    // Sauvegarde des solutions pour comparaison
+    write_vec(SOL, &la, "SOL_richardson.dat");
+    write_vec(EX_SOL, &la, "EX_SOL.dat");
   }
 
   /* Richardson General Tridiag */
@@ -107,9 +138,94 @@ int main(int argc,char *argv[])
   }
 
   /* Solve with General Richardson */
-  if (IMPLEM == JAC || IMPLEM == GS) {
+  if (IMPLEM == JAC) {
     write_GB_operator_colMajor_poisson1D(MB, &lab, &la, "MB.dat");
-    richardson_MB(AB, RHS, SOL, MB, &lab, &la, &ku, &kl, &tol, &maxit, resvec, &nbite);
+    
+    // Résolution avec Jacobi
+    jacobi_tridiag(AB, RHS, SOL, &lab, &la, &ku, &kl, &tol, &maxit, resvec, &nbite);
+    
+    printf("\nJacobi :\n");
+    printf("Nombre d'itérations : %d\n", nbite);
+    printf("Résidu final : %e\n", resvec[nbite-1]);
+    
+    // Analyse de la convergence
+    printf("\nAnalyse de la convergence :\n");
+    printf("Iteration |    Résidu    | Ratio de convergence\n");
+    printf("-----------------------------------------\n");
+    for(int i = 0; i < nbite; i += nbite/5) {  // Affiche ~5 points
+        double ratio = (i > 0) ? resvec[i]/resvec[i-1] : 0.0;
+        printf("%9d | %11.1e | %19.2f\n", i, resvec[i], ratio);
+    }
+    printf("%9d | %11.1e | %19.2f\n", nbite-1, resvec[nbite-1], 
+           resvec[nbite-1]/resvec[nbite-2]);
+    /* 
+     // Affichage des résidus pour chaque itération
+    printf("\nRésidus pour chaque itération :\n");
+    for(int i = 0; i <= nbite; i++) {
+        printf("%e\n", resvec[i]);
+    }
+    */
+    // Affichage des solutions pour comparaison
+    printf("\nComparaison des solutions :\n");
+    printf("     X     |  Analytique  |  Jacobi  |   Différence\n");
+    printf("------------------------------------------------\n");
+    for(int i = 0; i < la; i++) {
+        printf("%9.6f | %11.6f | %11.6f | %11.6f\n", 
+               X[i], EX_SOL[i], SOL[i], fabs(EX_SOL[i] - SOL[i]));
+    }
+    
+    // Calcul de l'erreur par rapport à la solution analytique
+    relres = relative_forward_error(SOL, EX_SOL, &la);
+    printf("\nErreur relative par rapport à la solution analytique : %e\n", relres);
+    
+    // Sauvegarde des solutions pour comparaison
+    write_vec(SOL, &la, "SOL_jacobi.dat");
+  }
+
+  /* Solve with Gauss-Seidel */
+  if (IMPLEM == GS) {
+    write_GB_operator_colMajor_poisson1D(MB, &lab, &la, "MB.dat");
+    
+    // Résolution avec Gauss-Seidel
+    gauss_seidel_tridiag(AB, RHS, SOL, &lab, &la, &ku, &kl, &tol, &maxit, resvec, &nbite);
+    
+    printf("\nGauss-Seidel :\n");
+    printf("Nombre d'itérations : %d\n", nbite);
+    printf("Résidu final : %e\n", resvec[nbite-1]);
+    
+    // Analyse de la convergence
+    printf("\nAnalyse de la convergence :\n");
+    printf("Iteration |    Résidu    | Ratio de convergence\n");
+    printf("-----------------------------------------\n");
+    for(int i = 0; i < nbite; i += nbite/5) {  // Affiche ~5 points
+        double ratio = (i > 0) ? resvec[i]/resvec[i-1] : 0.0;
+        printf("%9d | %11.1e | %19.2f\n", i, resvec[i], ratio);
+    }
+    printf("%9d | %11.1e | %19.2f\n", nbite-1, resvec[nbite-1], 
+           resvec[nbite-1]/resvec[nbite-2]);
+    
+    // Affichage des solutions pour comparaison
+    printf("\nComparaison des solutions :\n");
+    printf("     X     |  Analytique  | Gauss-Seidel |   Différence\n");
+    printf("------------------------------------------------\n");
+    for(int i = 0; i < la; i++) {
+        printf("%9.6f | %11.6f | %11.6f | %11.6f\n", 
+               X[i], EX_SOL[i], SOL[i], fabs(EX_SOL[i] - SOL[i]));
+    }
+    
+    // Calcul de l'erreur par rapport à la solution analytique
+    relres = relative_forward_error(SOL, EX_SOL, &la);
+    printf("\nErreur relative par rapport à la solution analytique : %e\n", relres);
+    
+    // Sauvegarde des solutions pour comparaison
+    write_vec(SOL, &la, "SOL_gauss_seidel.dat");
+    /*
+    // Sauvegarde des résidus pour le graphe
+    printf("\nRésidus pour chaque itération :\n");
+    for(int i = 0; i <= nbite; i++) {
+        printf("%e\n", resvec[i]);
+    }
+    */
   }
 
   /* Write solution */
@@ -117,6 +233,13 @@ int main(int argc,char *argv[])
 
   /* Write convergence history */
   write_vec(resvec, &nbite, "RESVEC.dat");
+/*
+  printf("\nDonnées pour le graphe (format CSV) :\n");
+  printf("Iteration,Residu\n");
+  for(int i = 0; i < nbite; i++) {
+      printf("%d,%e\n", i, resvec[i]);
+  }
+*/
 
   free(resvec);
   free(RHS);

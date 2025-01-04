@@ -80,6 +80,9 @@ run_tpPoisson1D_direct:
 	bin/tpPoisson1D_direct
 	bin/tpPoisson1D_direct 1
 	bin/tpPoisson1D_direct 2
+	bin/tpPoisson1D_direct 3
+	bin/tpPoisson1D_direct 4
+	bin/tpPoisson1D_direct LU
 
 clean:
 	rm *.o bin/*

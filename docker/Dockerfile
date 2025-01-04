@@ -7,7 +7,6 @@ WORKDIR /app
 COPY . .
 
 ENV HOSTNAME=docker
-RUN mkdir -p bin && \
-  make testenv
-
-CMD ["make", "run_testenv"]
+RUN mkdir bin && \
+  make all && \
+  make run
