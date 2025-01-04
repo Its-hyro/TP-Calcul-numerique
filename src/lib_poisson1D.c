@@ -5,23 +5,37 @@
 /**********************************************/
 #include "lib_poisson1D.h"
 
-void set_GB_operator_colMajor_poisson1D(double* AB, int *lab, int *la, int *kv){
-  int ii, jj, kk;
-  // Initialisation à 0
-  for (ii = 0; ii < (*lab * *la); ii++) {
-    AB[ii] = 0.0;
-  }
-  
-  // Format pour DGBSV
-  for (jj=0;jj<(*la);jj++){
-    kk = jj*(*lab);
-    AB[kk+0]=-1.0;  // sous-diagonale
-    AB[kk+1]=2.0;   // diagonale
-    AB[kk+2]=-1.0;  // sur-diagonale
-  }
-  // Conditions aux limites
-  AB[0]=0.0;
-  AB[(*lab)*(*la)-1]=0.0;
+void set_GB_operator_colMajor_poisson1D(double* AB, int* lab, int* la, int* kv) {
+    int filler = *kv;
+    int nb_cols = *la;
+    int nb_lines = *lab;
+
+    printf("\nDébut set_GB_operator_colMajor_poisson1D:\n");
+    printf("filler (kv) = %d\n", filler);
+    printf("nb_cols (la) = %d\n", nb_cols);
+    printf("nb_lines (lab) = %d\n", nb_lines);
+
+    for (int i = 0; i < nb_cols * nb_lines; i += nb_lines) {
+        for (int j = 0; j < filler; j++) {
+            AB[i + j] = 0;
+        }
+        AB[i + filler] = -1;
+        AB[i + filler + 1] = 2;
+        AB[i + filler + 2] = -1;
+    }
+
+    // Make the final elem 0
+    AB[nb_cols * nb_lines - 1] = 0;
+    // Make the first elem of the first non kv line 0
+    AB[filler] = 0;
+
+    printf("\nMatrice construite (format bande):\n");
+    for(int i = 0; i < nb_lines; i++) {
+        for(int j = 0; j < nb_cols; j++) {
+            printf("%6.2f ", AB[j * nb_lines + i]);
+        }
+        printf("\n");
+    }
 }
 
 void set_GB_operator_colMajor_poisson1D_DGBMV(double* AB, int *lab, int *la, int *kv){
@@ -102,51 +116,69 @@ double relative_forward_error(double* x, double* y, int* la){
     return sqrt(norm_diff) / sqrt(norm_y);
 }
 
-int indexABCol(int i, int j, int *lab){
-  return j*(*lab)+i;
+int indexABCol(int i, int j, int* lab) {
+    return (j + 1) * (*lab - 1) + i - 1;
 }
 
-int dgbtrftridiag(int *la, int *n, int *kl, int *ku, double *AB, int *lab, int *ipiv, int *info){
-  // Vérification des paramètres
-  if (*kl != 1 || *ku != 1) {
-    *info = -1;
-    return *info;
-  }
+int dgbtrftridiag(int* la, int* n, int* kl, int* ku, double* AB, int* lab, int* ipiv, int* info) {
+    int nb_lines = *lab;
+    int nb_cols = *la;
+    int upper_diags = *ku;
+    int lower_diags = *kl;
+    int result_matrix_size = *n;
+    int kv = 1;  // Position de la diagonale
 
-  *info = 0;
-  
-  // Pour une matrice tridiagonale au format GB :
-  // AB[i*(*lab) + 0] : sous-diagonale (l)
-  // AB[i*(*lab) + 1] : diagonale (u)
-  // AB[i*(*lab) + 2] : sur-diagonale (déjà en place)
-  
-  for(int i = 0; i < *n-1; i++) {
-    // Si pivot nul, erreur
-    if(fabs(AB[i*(*lab) + 1]) < 1e-10) {
-      *info = i+1;
-      return *info;
+    printf("\nDébut dgbtrftridiag:\n");
+    printf("nb_lines (lab) = %d\n", nb_lines);
+    printf("nb_cols (la) = %d\n", nb_cols);
+    printf("upper_diags (ku) = %d\n", upper_diags);
+    printf("lower_diags (kl) = %d\n", lower_diags);
+    printf("result_matrix_size (n) = %d\n", result_matrix_size);
+
+    // Vérification des dimensions
+    if (nb_lines != 4 || lower_diags != 1 || upper_diags != 1 || nb_cols < result_matrix_size) {
+        printf("Erreur: dimensions incorrectes\n");
+        *info = -1;
+        return *info;
     }
-    
-    // Calcul du multiplicateur l = a_{i+1,i}/a_{i,i}
-    double l = AB[(i+1)*(*lab) + 0] / AB[i*(*lab) + 1];
-    
-    // Mise à jour de la sous-diagonale avec l
-    AB[(i+1)*(*lab) + 0] = l;
-    
-    // Mise à jour de la diagonale : a_{i+1,i+1} = a_{i+1,i+1} - l*a_{i,i+1}
-    AB[(i+1)*(*lab) + 1] = AB[(i+1)*(*lab) + 1] - l * AB[i*(*lab) + 2];
-    
-    // Stockage des permutations (pas de permutation pour une matrice tridiagonale)
-    ipiv[i] = i+1;
-  }
-  ipiv[*n-1] = *n;
-  
-  // Vérification du dernier pivot
-  if(fabs(AB[(*n-1)*(*lab) + 1]) < 1e-10) {
-    *info = *n;
-  }
-  
-  return *info;
+
+    // Pour une matrice tridiagonale au format bande:
+    // - ligne 0: zéros (non utilisé)
+    // - ligne 1: sous-diagonale (l)
+    // - ligne 2: diagonale (u)
+    // - ligne 3: sur-diagonale
+
+    // Factorisation LU
+    for (int k = 0; k < result_matrix_size - 1; k++) {
+        // Vérification du pivot
+        if(fabs(AB[k * nb_lines + 2]) < 1e-10) {
+            *info = k + 1;
+            return *info;
+        }
+
+        // Calcul du multiplicateur
+        double l = AB[k * nb_lines + 3] / AB[k * nb_lines + 2];
+        
+        // Stockage du multiplicateur dans la sous-diagonale
+        AB[(k+1) * nb_lines + 1] = l;
+        
+        // Mise à jour de la diagonale suivante
+        AB[(k+1) * nb_lines + 2] = AB[(k+1) * nb_lines + 2] - l * AB[k * nb_lines + 3];
+    }
+
+    // Vérification du dernier pivot
+    if(fabs(AB[(result_matrix_size - 1) * nb_lines + 2]) < 1e-10) {
+        *info = result_matrix_size;
+        return *info;
+    }
+
+    // Mise à jour du vecteur ipiv
+    for(int i = 0; i < result_matrix_size; i++) {
+        ipiv[i] = i + 1;
+    }
+
+    *info = 0;
+    return *info;
 }
 
 void dgbmv_poisson1D(double *AB, double *RHS, double *X, int *la, int *lab, int *ku, int *kl, int *kv) {
@@ -214,73 +246,86 @@ int test_dgbmv_poisson1D(void) {
 }
 
 int test_dgbtrftridiag(void) {
-  int la = 5;  // Taille de la matrice
-  int ku = 1;  // Nombre de sur-diagonales
-  int kl = 1;  // Nombre de sous-diagonales
-  int kv = 1;  // Position de la diagonale
-  int lab = kv + kl + ku + 1;
-  int *ipiv = (int *)malloc(sizeof(int)*la);
-  int info;
-  
-  // Allocation et initialisation de la matrice
-  double *AB = (double *)malloc(sizeof(double)*lab*la);
-  double *AB_copy = (double *)malloc(sizeof(double)*lab*la);
-  
-  // Création de la matrice tridiagonale
-  set_GB_operator_colMajor_poisson1D(AB, &lab, &la, &kv);
-  
-  // Copie de la matrice originale
-  for(int i = 0; i < lab*la; i++) {
-    AB_copy[i] = AB[i];
-  }
-  
-  // Factorisation LU
-  dgbtrftridiag(&la, &la, &kl, &ku, AB, &lab, ipiv, &info);
-  
-  // Vérification : reconstruction de la matrice originale A = L*U
-  int valid = 1;
-  if(info == 0) {
-    // Vérification des éléments L et U
-    for(int j = 0; j < la; j++) {
-      // Vérification de la diagonale de U
-      double u_diag = AB[j*lab + 1];
-      if(fabs(u_diag) < 1e-10) {
-        valid = 0;
-        printf("Pivot nul trouvé à la position %d\n", j);
-        break;
-      }
-      
-      // Vérification des multiplicateurs L (doivent être < 1 en valeur absolue)
-      if(j < la-1) {
-        double l_subdiag = AB[(j+1)*lab + 0];
-        if(fabs(l_subdiag) >= 1.0) {
-          valid = 0;
-          printf("Multiplicateur L invalide à la position %d: %f\n", j+1, l_subdiag);
-          break;
-        }
-      }
-      
-      // Vérification de la sur-diagonale de U
-      if(j < la-1) {
-        double u_superdiag = AB[j*lab + 2];
-        if(fabs(u_superdiag + 1.0) > 1e-10) {
-          valid = 0;
-          printf("Sur-diagonale U incorrecte à la position %d: %f\n", j, u_superdiag);
-          break;
-        }
-      }
+    int la = 5;  // Taille de la matrice
+    int ku = 1;  // Nombre de sur-diagonales
+    int kl = 1;  // Nombre de sous-diagonales
+    int kv = 1;  // Position de la diagonale
+    int lab = 4; // kl + ku + kv + 1
+    int *ipiv = (int *)malloc(sizeof(int)*la);
+    int info;
+    
+    // Allocation et initialisation de la matrice
+    double *AB = (double *)malloc(sizeof(double)*lab*la);
+    double *AB_copy = (double *)malloc(sizeof(double)*lab*la);
+    
+    // Création de la matrice tridiagonale
+    set_GB_operator_colMajor_poisson1D(AB, &lab, &la, &kv);
+    
+    // Copie de la matrice originale
+    for(int i = 0; i < lab*la; i++) {
+        AB_copy[i] = AB[i];
     }
-  } else {
-    valid = 0;
-    printf("La factorisation a échoué avec info = %d\n", info);
-  }
-  
-  // Libération de la mémoire
-  free(AB);
-  free(AB_copy);
-  free(ipiv);
-  
-  return valid;
+    
+    // Factorisation LU
+    dgbtrftridiag(&la, &la, &kl, &ku, AB, &lab, ipiv, &info);
+    
+    // Vérification : les éléments de L et U doivent être cohérents
+    int valid = 1;
+    if(info == 0) {
+        // Vérification des éléments diagonaux de U
+        for(int j = 0; j < la; j++) {
+            double u_diag = AB[j*lab + kv + 1];
+            if(fabs(u_diag) < 1e-10) {
+                valid = 0;
+                printf("Pivot nul trouvé à la position %d\n", j);
+                break;
+            }
+        }
+        
+        // Vérification que la factorisation est correcte en reconstruisant A = LU
+        if(valid) {
+            // Pour chaque ligne
+            for(int i = 0; i < la; i++) {
+                // Pour chaque colonne
+                for(int j = 0; j < la; j++) {
+                    if(abs(i-j) <= 1) {  // On ne vérifie que la tridiagonale
+                        double sum = 0.0;
+                        // Calcul de (LU)_{ij}
+                        for(int k = 0; k <= i && k <= j; k++) {
+                            double l_ik = (i == k) ? 1.0 : 
+                                        (i == k+1) ? AB[(k+1)*lab + kv] : 0.0;
+                            double u_kj = (k == j) ? AB[k*lab + kv + 1] :
+                                        (k == j-1) ? AB[k*lab + kv + 2] : 0.0;
+                            sum += l_ik * u_kj;
+                        }
+                        // Comparaison avec la matrice originale
+                        double orig;
+                        if(i == j) orig = 2.0;
+                        else if(abs(i-j) == 1) orig = -1.0;
+                        else orig = 0.0;
+                        
+                        if(fabs(sum - orig) > 1e-10) {
+                            valid = 0;
+                            printf("Erreur de reconstruction à la position (%d,%d): %f != %f\n", 
+                                   i, j, sum, orig);
+                            break;
+                        }
+                    }
+                }
+                if(!valid) break;
+            }
+        }
+    } else {
+        valid = 0;
+        printf("La factorisation a échoué avec info = %d\n", info);
+    }
+    
+    // Libération de la mémoire
+    free(AB);
+    free(AB_copy);
+    free(ipiv);
+    
+    return valid;
 }
 
 void jacobi_tridiag(double *AB, double *RHS, double *X, int *lab, int *la, int *ku, int *kl, double *tol, int *maxit, double *resvec, int *nbite) {
