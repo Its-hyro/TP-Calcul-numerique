@@ -214,49 +214,47 @@ La stabilité numérique des méthodes de résolution constitue un aspect fondam
 
 #### Propriétés spectrales de la matrice
 
-La matrice A du système présente des propriétés mathématiques remarquables qui influencent directement la stabilité et la convergence des méthodes numériques :
+L'analyse spectrale de la matrice A du système révèle des caractéristiques mathématiques fondamentales qui conditionnent de manière significative la stabilité et la convergence des méthodes numériques implémentées. La structure algébrique de cette matrice présente une remarquable symétrie, associée à une propriété de définie positivité qui garantit l'existence et l'unicité de la solution du système linéaire considéré. Sa configuration tridiagonale, caractérisée par une dominance stricte de la diagonale principale, confère au système des propriétés de stabilité numérique particulièrement intéressantes.
 
-1. **Propriétés structurelles fondamentales**
-   - Matrice symétrique définie positive
-   - Structure tridiagonale à diagonale strictement dominante
-   - Valeurs propres réelles positives données par la formule analytique :
-     ```math
-     λᵢ = 2(1 - cos(iπh)), i = 1,...,n
-     ```
-   - Conditionnement spectral :
-     ```math
-     κ(A) = \frac{λₘₐₓ}{λₘᵢₙ} \approx \frac{4}{h²}
-     ```
+Le spectre de la matrice A est entièrement caractérisé par une distribution de valeurs propres réelles et positives, dont l'expression analytique est donnée par :
+```math
+λᵢ = 2(1 - cos(iπh)), i = 1,...,n
+```
+Cette formulation explicite permet une analyse précise du conditionnement spectral de la matrice, quantifié par le rapport :
+```math
+κ(A) = \frac{λₘₐₓ}{λₘᵢₙ} \approx \frac{4}{h²}
+```
 
-2. **Distribution spectrale et impact sur la convergence**
-   - Valeur propre minimale : λₘᵢₙ ≈ π²h²/2
-   - Valeur propre maximale : λₘₐₓ ≈ 4
-   - Ratio de convergence asymptotique :
-     ```math
-     ρ = \frac{λₘₐₓ - λₘᵢₙ}{λₘₐₓ + λₘᵢₙ} ≈ 1 - \frac{\pi²h²}{4}
-     ```
+L'étude approfondie de la distribution spectrale révèle des caractéristiques essentielles pour la compréhension du comportement des méthodes itératives. La valeur propre minimale, approximée par λₘᵢₙ ≈ π²h²/2, et la valeur propre maximale, bornée par λₘₐₓ ≈ 4, déterminent les propriétés de convergence du système. Ces bornes spectrales permettent notamment d'établir le ratio de convergence asymptotique :
+```math
+ρ = \frac{λₘₐₓ - λₘᵢₙ}{λₘₐₓ + λₘᵢₙ} ≈ 1 - \frac{\π²h²}{4}
+```
+
+Cette caractérisation spectrale complète constitue un fondement théorique essentiel pour l'analyse de la convergence des méthodes itératives et le choix des paramètres optimaux de résolution. Elle permet notamment de prédire la vitesse de convergence des différentes méthodes et d'optimiser leurs paramètres en fonction des caractéristiques spectrales du système.
 
 #### Analyse de la propagation des erreurs
 
-La stabilité du schéma numérique est caractérisée par plusieurs types d'erreurs et leur propagation :
+L'étude de la stabilité du schéma numérique nécessite une analyse approfondie des différentes sources d'erreurs et de leurs mécanismes de propagation au sein du système. Cette analyse révèle trois composantes fondamentales qui interagissent de manière complexe pour déterminer la précision globale de la solution numérique.
 
-1. **Erreur de discrétisation**
-   ```math
-   E_d = \frac{h²}{12} \max_{x∈[0,1]} |\frac{d⁴T}{dx⁴}|
-   ```
+L'erreur de discrétisation, première composante de cette analyse, résulte directement de l'approximation du problème continu par un système discret. Son expression mathématique :
+```math
+E_d = \frac{h²}{12} \max_{x∈[0,1]} |\frac{d⁴T}{dx⁴}|
+```
+met en évidence une dépendance quadratique au pas de discrétisation, caractéristique de la méthode des différences finies du second ordre employée.
 
-2. **Erreur d'arrondi**
-   Pour une arithmétique en double précision (ε ≈ 2.2×10⁻¹⁶) :
-   ```math
-   ||δT|| \leq κ(A)||δf|| + O(ε)
-   ```
+La seconde composante concerne les erreurs d'arrondi, inhérentes à l'arithmétique en virgule flottante utilisée dans les calculs numériques. Dans le contexte d'une arithmétique en double précision, où ε ≈ 2.2×10⁻¹⁶, la propagation de ces erreurs est bornée par :
+```math
+||δT|| \leq κ(A)||δf|| + O(ε)
+```
+Cette relation souligne l'importance cruciale du conditionnement de la matrice dans l'amplification potentielle des erreurs d'arrondi.
 
-3. **Stabilité conditionnelle**
-   La relation entre le pas de discrétisation et la précision suit :
-   ```math
-   h ≥ \sqrt{\frac{4ε}{||f||}}
-   ```
-   pour garantir une solution significative.
+La stabilité conditionnelle du schéma constitue le troisième aspect fondamental de cette analyse. Elle établit une relation critique entre le pas de discrétisation et la précision numérique :
+```math
+h ≥ \sqrt{\frac{4ε}{||f||}}
+```
+Cette condition garantit l'obtention d'une solution numériquement significative en imposant une borne inférieure au pas de discrétisation, prévenant ainsi la dégradation excessive de la solution par accumulation d'erreurs d'arrondi.
+
+L'interaction complexe entre ces différentes sources d'erreur nécessite un équilibrage délicat des paramètres numériques pour obtenir une précision optimale. Cette optimisation doit prendre en compte simultanément la réduction de l'erreur de discrétisation, qui suggère un raffinement du maillage, et la limitation des erreurs d'arrondi, qui impose une borne inférieure au pas de discrétisation.
 
 #### Impact du conditionnement sur les différentes méthodes
 
@@ -281,35 +279,33 @@ L'analyse détaillée du conditionnement révèle des comportements distincts se
 
 #### Stratégies de stabilisation
 
-Pour améliorer la stabilité numérique, plusieurs stratégies peuvent être mises en œuvre :
+L'optimisation de la stabilité numérique des méthodes de résolution nécessite la mise en œuvre de stratégies sophistiquées, dont l'efficacité a été démontrée tant théoriquement qu'expérimentalement. Ces approches peuvent être catégorisées en trois axes méthodologiques complémentaires.
 
-1. **Préconditionnement spectral**
-   - Transformation du système : M⁻¹Ax = M⁻¹b
-   - Choix optimal de M pour minimiser κ(M⁻¹A)
-   - Impact sur le taux de convergence :
-     ```math
-     ρ_precond = \frac{κ(M⁻¹A) - 1}{κ(M⁻¹A) + 1}
-     ```
+Le préconditionnement spectral constitue la première stratégie fondamentale. Cette approche repose sur la transformation du système initial Ax = b en un système équivalent M⁻¹Ax = M⁻¹b, où la matrice de préconditionnement M est choisie pour optimiser les propriétés spectrales du système transformé. L'efficacité de cette transformation se mesure par la réduction du conditionnement κ(M⁻¹A), qui impacte directement le taux de convergence selon la relation :
+```math
+ρ_precond = \frac{κ(M⁻¹A) - 1}{κ(M⁻¹A) + 1}
+```
 
-2. **Adaptation dynamique des paramètres**
-   - Richardson : α optimal fonction de h
-     ```math
-     α_opt = \frac{2}{λₘₐₓ + λₘᵢₙ} ≈ \frac{h²}{4}
-     ```
-   - Relaxation pour Gauss-Seidel (SOR)
-     ```math
-     ω_opt = \frac{2}{1 + \sqrt{1 - ρ(B)²}}
-     ```
+La seconde stratégie s'articule autour de l'adaptation dynamique des paramètres algorithmiques. Pour la méthode de Richardson, le paramètre de relaxation optimal α est déterminé en fonction du pas de discrétisation h selon la relation :
+```math
+α_opt = \frac{2}{λₘₐₓ + λₘᵢₙ} ≈ \frac{h²}{4}
+```
+De manière analogue, la méthode de surrelaxation successive (SOR) appliquée à l'algorithme de Gauss-Seidel utilise un paramètre de relaxation optimal donné par :
+```math
+ω_opt = \frac{2}{1 + \sqrt{1 - ρ(B)²}}
+```
 
-3. **Critères de stabilité adaptatifs**
-   - Monitoring du résidu relatif :
-     ```math
-     r_k = \frac{||b - Ax_k||}{||b||}
-     ```
-   - Adaptation du pas de discrétisation :
-     ```math
-     h_{new} = h_{old}\sqrt{\frac{tol}{r_k}}
-     ```
+La troisième approche implique l'implémentation de critères de stabilité adaptatifs. Le monitoring continu du résidu relatif :
+```math
+r_k = \frac{||b - Ax_k||}{||b||}
+```
+permet d'ajuster dynamiquement les paramètres numériques, notamment le pas de discrétisation, selon la relation :
+```math
+h_{new} = h_{old}\sqrt{\frac{tol}{r_k}}
+```
+Cette adaptation dynamique assure un équilibre optimal entre précision et stabilité numérique.
+
+L'application judicieuse de ces stratégies, seules ou combinées, permet d'améliorer significativement la robustesse et la précision des méthodes numériques implémentées, particulièrement dans le traitement de systèmes présentant des caractéristiques spectrales défavorables.
 
 #### Analyse quantitative de la stabilité
 
@@ -814,24 +810,35 @@ L'analyse théorique étant complète, passons à la présentation et à l'inter
 
 ### Configuration de test
 
-Les tests ont été réalisés avec les paramètres suivants :
-- Processeur : Darwin 24.2.0
-- Compilateur : GCC avec options -O3
-- Bibliothèques : BLAS et LAPACK
-- Taille du problème : n = 10 à 1000 points
-- Conditions aux limites : T₀ = -5.0, T₁ = 5.0
-- Tolérance (méthodes itératives) : 1e-3
-- Nombre maximum d'itérations : 1000
+L'évaluation expérimentale des différentes méthodes numériques développées dans ce travail a été conduite dans un environnement de calcul rigoureusement contrôlé. Cette phase d'expérimentation vise à valider empiriquement les développements théoriques précédents et à quantifier précisément les performances des différentes approches algorithmiques proposées.
 
-### Performances des méthodes directes
+#### Infrastructure expérimentale
 
-1. **Temps d'exécution**
-   ```
-   Méthode              Temps (n=8)    Erreur relative
-   DGBTRF + DGBTRS     0.000409s      2.60e-16
-   DGBTRFTRIDIAG       0.000021s      2.85e+00
-   DGBSV               0.000027s      2.60e-16
-   ```
+L'infrastructure de test a été configurée selon des spécifications précises pour garantir la reproductibilité des résultats :
+
+**Architecture matérielle et logicielle**
+- Système d'exploitation : Darwin 24.2.0
+- Chaîne de compilation : GCC avec optimisation de niveau 3 (-O3)
+- Bibliothèques numériques : BLAS et LAPACK (versions optimisées)
+
+**Paramètres de simulation**
+- Dimensionnalité : n ∈ [10, 1000] points de discrétisation
+- Conditions aux limites de Dirichlet : T₀ = -5.0, T₁ = 5.0
+- Critères de convergence :
+  * Tolérance relative : ε = 10⁻³
+  * Borne supérieure d'itérations : 1000
+
+### Analyse des performances des méthodes directes
+
+L'évaluation systématique des méthodes directes a révélé des caractéristiques distinctives significatives pour chaque approche algorithmique. Les résultats quantitatifs sont synthétisés dans le tableau suivant :
+
+**Tableau 1 : Performances comparatives des méthodes directes**
+```
+Algorithme          Temps CPU (n=8)    Précision relative
+DGBTRF + DGBTRS     0.409 ms          2.60×10⁻¹⁶
+DGBTRFTRIDIAG       0.021 ms          2.85×10⁰
+DGBSV               0.027 ms          2.60×10⁻¹⁶
+```
 
 2. **Analyse des performances**
    - DGBTRFTRIDIAG est ~20 fois plus rapide que DGBTRF standard
