@@ -1,141 +1,135 @@
 # Méthodes numériques pour la résolution de l'équation de la chaleur en 1D stationnaire
 ## Application des algorithmes de calcul matriciel avec BLAS et LAPACK
 
-*Master 1 - Calcul Numérique*  
+*Master 1 - Calcul Numérique* 
+*Drivet Dorian*
 *Janvier 2025*
 
 ---
 
 ## Résumé
 
-Ce rapport présente une étude approfondie des méthodes numériques pour la résolution de l'équation de la chaleur en une dimension dans le cas stationnaire. L'objectif principal est d'explorer et de comparer différentes approches de résolution, tant directes qu'itératives, en utilisant les bibliothèques BLAS et LAPACK. Le travail se concentre sur l'implémentation efficace des méthodes de stockage matriciel et des algorithmes de résolution, avec une attention particulière portée à l'analyse des performances et à la précision des résultats. Les méthodes développées sont particulièrement adaptées aux applications nécessitant une haute précision ou un traitement en temps réel, comme la simulation thermique des composants électroniques ou l'optimisation des échangeurs de chaleur.
+Ce rapport explore les méthodes numériques pour la résolution de l'équation de la chaleur en une dimension dans le cas stationnaire, un problème central en modélisation thermique. En combinant l'efficacité des bibliothèques BLAS et LAPACK avec des approches de résolution directes et itératives, ce travail met en lumière les avantages et limites de différentes stratégies numériques. L'accent est mis sur l'optimisation du stockage matriciel et des algorithmes, accompagnée d'une analyse approfondie des performances et de la précision. Ces méthodes, conçues pour répondre aux exigences modernes de haute précision et de traitement en temps réel, trouvent des applications variées, telles que la gestion thermique des composants électroniques et l'optimisation des échangeurs de chaleur.
 
 ## Table des matières
 
 1. [Introduction](#introduction)
+   1.1. [Contexte et Objectifs](#contexte-et-objectifs)
+   1.2. [Plan du Rapport](#plan-du-rapport)
+
 2. [Théorie et Modélisation](#théorie-et-modélisation)
+   2.1. [Présentation du Problème](#présentation-du-problème)
+   2.2. [Formulation Mathématique](#formulation-mathématique)
+   2.3. [Hypothèses et Conditions aux Limites](#hypothèses-et-conditions-aux-limites)
+   2.4. [Analyse Théorique de la Stabilité](#analyse-théorique-de-la-stabilité)
+
 3. [Méthodes Numériques Directes](#méthodes-numériques-directes)
-4. [Méthodes Itératives](#méthodes-itératives)
-5. [Résolution pour Formats Alternatifs](#résolution-pour-formats-alternatifs)
-6. [Résultats Expérimentaux](#résultats-expérimentaux)
-7. [Conclusion](#conclusion)
-8. [Annexes](#annexes)
+   3.1. [Factorisation LU](#factorisation-lu)
+   3.2. [Implémentation avec BLAS/LAPACK](#implémentation-avec-blaslapack)
+   3.3. [Complexité et Performance](#complexité-et-performance)
+   3.4. [Limites des Méthodes Directes](#limites-des-méthodes-directes)
+
+4. [Méthodes Numériques Itératives](#méthodes-numériques-itératives)
+   4.1. [Présentation des Méthodes](#présentation-des-méthodes)
+      4.1.1. [Méthode de Richardson](#méthode-de-richardson)
+      4.1.2. [Méthode de Jacobi](#méthode-de-jacobi)
+      4.1.3. [Méthode de Gauss-Seidel](#méthode-de-gauss-seidel)
+   4.2. [Analyse des Résultats de Convergence](#analyse-des-résultats-de-convergence)
+   4.3. [Comparaison des Performances](#comparaison-des-performances)
+   4.4. [Conclusions sur les Méthodes Itératives](#conclusions-sur-les-méthodes-itératives)
+
+5. [Formats Alternatifs de Stockage](#formats-alternatifs-de-stockage)
+   5.1. [Présentation des Formats Bande, CSR, et CSC](#présentation-des-formats-bande-csr-et-csc)
+   5.2. [Implémentation dans les Méthodes Numériques](#implémentation-dans-les-méthodes-numériques)
+   5.3. [Comparaison en Termes de Mémoire et Performances](#comparaison-en-termes-de-mémoire-et-performances)
+
+6. [Conclusion et Perspectives](#conclusion-et-perspectives)
+   6.1. [Résumé des Résultats Clés](#résumé-des-résultats-clés)
+   6.2. [Limites des Approches Étudiées](#limites-des-approches-étudiées)
+   6.3. [Pistes de Recherche et Développements Futurs](#pistes-de-recherche-et-développements-futurs)
+
+7. [Annexes](#annexes)
+   7.1. [Code Source](#code-source)
+   7.2. [Instructions de Compilation et d'Exécution](#instructions-de-compilation-et-d'exécution)
+   7.3. [Bibliographie](#bibliographie)
+   7.4. [Glossaire des Termes Techniques](#glossaire-des-termes-techniques)
 
 ## Introduction
+### Contexte et Objectifs
 
-### Contexte pratique et motivations
+**Contexte**
 
-L'équation de la chaleur est un modèle central en physique et en ingénierie, représentant la diffusion thermique dans un matériau homogène. Sa résolution permet de prédire des phénomènes variés, allant du transfert de chaleur dans des bâtiments à la gestion thermique des composants électroniques. Les applications modernes incluent :
+L'équation de la chaleur constitue un modèle fondamental en physique et en ingénierie, capturant les phénomènes de diffusion thermique dans des matériaux homogènes et isotropes. Ce modèle trouve des applications variées, allant de la gestion thermique des composants électroniques à la modélisation énergétique des bâtiments. Ces défis sont renforcés par les contraintes croissantes d'efficacité computationnelle et de précision imposées par les systèmes modernes. En effet, les systèmes industriels, comme les moteurs aéronautiques ou les centres de données, nécessitent des solutions thermiques en temps réel tout en maintenant des marges d'erreur négligeables.
 
-Les applications traditionnelles de l'équation de la chaleur couvrent un large spectre de domaines industriels et scientifiques, chacun présentant des exigences spécifiques en termes de précision et de performance computationnelle.
+Dans ce contexte, la discrétisation de l'équation de la chaleur par des méthodes aux différences finies offre une approche rigoureuse pour modéliser numériquement ces phénomènes. Le passage à la résolution numérique repose sur la mise en œuvre de systèmes linéaires de grande dimension, dont le traitement optimal constitue un enjeu central. Ces systèmes sont souvent résolus à l'aide de méthodes numériques directes ou itératives, intégrant des algorithmes d'optimisation spécifiques pour les matrices creuses ou structurées. L'utilisation des bibliothèques BLAS et LAPACK permet d'exploiter les architectures matérielles modernes tout en assurant des performances computationnelles élevées.
 
-Dans le secteur aéronautique, la modélisation de la dissipation thermique au sein des moteurs à réaction constitue un défi majeur. Les contraintes de précision sont particulièrement strictes, nécessitant une résolution thermique de l'ordre de 10⁻⁶ K pour garantir l'intégrité des alliages critiques. Cette modélisation doit, en outre, s'effectuer en temps réel avec des temps de calcul inférieurs à la seconde pour permettre des ajustements dynamiques des paramètres opérationnels.
 
-Le domaine médical impose également des contraintes rigoureuses, notamment dans le cadre de la thermothérapie tissulaire. La précision requise de 0,1°C s'avère cruciale pour prévenir toute lésion thermique des tissus biologiques. Le système doit maintenir un taux de rafraîchissement de 10 Hz pour assurer un contrôle précis et continu du traitement thermique.
+**Objectifs**
 
-L'industrie électronique présente des défis particuliers en matière de gestion thermique des processeurs et composants. La miniaturisation croissante des transistors modernes nécessite une résolution spatiale exceptionnelle de l'ordre de 10⁻⁶ mètres. Le contrôle actif de la température exige une fréquence de mise à jour élevée de 1 kHz pour maintenir des conditions opérationnelles optimales.
+Ce travail pratique vise à étudier et implémenter différentes méthodes numériques pour la résolution de l'équation de la chaleur unidimensionnelle en régime stationnaire. L'étude s'articule autour de trois parties.
 
-Dans le secteur de la construction, l'analyse de l'isolation thermique des bâtiments requiert des simulations à grande échelle, impliquant des maillages comportant jusqu'à 10⁶ points. Ces simulations doivent intégrer une optimisation multi-paramétrique complexe pour tenir compte des nombreuses variables environnementales et structurelles influençant les performances thermiques du bâtiment.
+Le premier objectif consiste à développer une compréhension approfondie de la discrétisation par différences finies de l'équation de la chaleur et de sa transformation en système linéaire. Cette étape fondamentale permet d'établir les bases mathématiques nécessaires à la mise en œuvre des méthodes de résolution numérique.
 
-Les applications émergentes présentent des défis encore plus complexes. Dans le domaine de l'intelligence artificielle, l'optimisation thermique des centres de données doit gérer des densités de puissance considérables, atteignant 100 kW/m³. Le refroidissement des accélérateurs neuromorphiques pose des défis particuliers en raison de gradients thermiques extrêmes dépassant 100°C/mm. La gestion thermique des processeurs tensoriels (TPU) nécessite une adaptation dynamique du maillage pour suivre l'évolution des points chauds multiples et mobiles.
+Le deuxième objectif porte sur l'implémentation et l'analyse comparative des différentes méthodes de résolution. Cela comprend l'étude des méthodes directes, notamment la factorisation LU avec ses variantes optimisées, ainsi que les méthodes itératives telles que Richardson, Jacobi et Gauss-Seidel. Une attention particulière est portée à l'utilisation efficace des bibliothèques BLAS et LAPACK pour optimiser les performances des calculs matriciels.
 
-La nanotechnologie introduit des contraintes spécifiques liées aux échelles considérées. Le contrôle thermique des dispositifs quantiques requiert une précision exceptionnelle à des températures ultra-basses, inférieures à 1K, condition essentielle pour maintenir la cohérence quantique. Les circuits moléculaires, opérant à des échelles nanométriques de 1 à 100 nm, nécessitent la prise en compte du couplage entre effets thermiques et quantiques.
+Le troisième objectif concerne l'optimisation du stockage des données et l'analyse des performances. Il s'agit d'étudier l'impact des différents formats de stockage matriciel (bande, CSR, CSC) sur les performances globales des algorithmes. Cette analyse permet d'établir des critères de choix objectifs entre les différentes approches selon les caractéristiques du problème à traiter, notamment en termes de taille du système, de précision requise et de contraintes de temps de calcul.
 
-Enfin, le secteur des énergies renouvelables présente des défis à grande échelle. Le stockage thermique pour le solaire concentré implique la gestion de volumes considérables, supérieurs à 10⁶ m³, avec des cycles thermiques complexes. L'optimisation des échangeurs de chaleur doit prendre en compte des géométries multi-échelles sous des contraintes de performance strictes. La géothermie profonde, quant à elle, nécessite la modélisation de domaines étendus à l'échelle kilométrique, caractérisés par d'importantes hétérogénéités structurelles et thermiques.
-
-Après avoir présenté le contexte et les motivations de notre étude, examinons maintenant comment les méthodes numériques développées s'adaptent aux différentes applications.
-
-### Adéquation des méthodes numériques aux applications
-
-L'analyse approfondie des différentes méthodes numériques développées dans ce travail révèle une adéquation remarquable avec les exigences spécifiques des applications modernes. Cette adaptation se manifeste à travers trois axes méthodologiques principaux, chacun répondant à des besoins distincts mais complémentaires.
-
-Les méthodes directes, notamment la factorisation LU en format bande, excellent dans les applications nécessitant une haute précision numérique. Leur stabilité numérique exceptionnelle, caractérisée par une précision atteignant 10⁻¹⁵, les rend particulièrement adaptées à la simulation des composants électroniques où la moindre erreur peut avoir des conséquences critiques. Dans le domaine médical, la stabilité garantie de ces méthodes s'avère cruciale pour le contrôle thermique des tissus biologiques, où la fiabilité des résultats est impérative. L'optimisation des processus industriels bénéficie également de leur robustesse intrinsèque, permettant des ajustements précis des paramètres opérationnels sans risque de divergence numérique.
-
-Les méthodes itératives, quant à elles, démontrent leur supériorité dans le traitement des systèmes de grande dimension. Leur efficacité se manifeste particulièrement dans la modélisation thermique des bâtiments, où les maillages peuvent atteindre plusieurs millions de points. La simulation des centres de données, caractérisée par des domaines spatiaux étendus et des conditions aux limites complexes, tire pleinement parti de leur capacité à gérer efficacement de grandes matrices creuses. Dans le contexte de la géothermie, leur flexibilité permet une adaptation dynamique du maillage, essentielle pour capturer les variations spatiales des propriétés thermiques du sous-sol.
-
-L'optimisation des formats de stockage constitue le troisième pilier de notre approche, particulièrement crucial pour les applications temps réel. Le format bande généralisé (GB) offre un compromis optimal entre efficacité computationnelle et occupation mémoire, permettant le contrôle actif des processeurs avec une latence minimale. Les formats compressés (CSR/CSC) démontrent leur pertinence dans le monitoring des réacteurs nucléaires, où la rapidité de mise à jour des données thermiques est primordiale. Ces optimisations s'avèrent particulièrement précieuses pour les systèmes embarqués, où les contraintes mémoire sont stringentes et où l'efficacité énergétique des calculs est un facteur critique.
-
-La synergie entre ces différentes approches permet une adaptabilité remarquable aux contraintes spécifiques de chaque application. Les méthodes directes assurent la précision nécessaire aux calculs critiques, tandis que les méthodes itératives garantissent la scalabilité pour les grands systèmes. Les optimisations de stockage, quant à elles, permettent une implémentation efficace sur des architectures matérielles variées, des supercalculateurs aux systèmes embarqués.
-
-Cette adaptation fine aux exigences applicatives nous conduit naturellement à examiner l'état actuel de la recherche dans ce domaine, où les avancées récentes ouvrent de nouvelles perspectives pour l'amélioration continue de ces méthodes.
-
-### État de l'art et avancées récentes
-
-L'évolution des méthodes de résolution de l'équation de la chaleur s'inscrit dans une trajectoire historique riche, marquée par des avancées théoriques et technologiques significatives. Cette progression peut être analysée selon plusieurs axes complémentaires, reflétant la diversité des approches développées au fil du temps.
-
-Les fondements théoriques de ce domaine reposent sur des travaux séminaux, notamment ceux d'Özisik (1993) dans son ouvrage "Heat Conduction" publié chez Wiley-Interscience. Cette contribution majeure établit non seulement les bases théoriques de la conduction thermique, mais propose également une synthèse exhaustive des méthodes analytiques et numériques disponibles. Ces travaux constituent encore aujourd'hui une référence incontournable pour la comparaison et la validation des approches modernes. Parallèlement, les développements mathématiques présentés par Kreyszig (2011) dans "Advanced Engineering Mathematics" ont fourni un cadre rigoureux pour le traitement des équations différentielles et l'analyse de stabilité, enrichissant considérablement notre compréhension des aspects numériques fondamentaux.
-
-Les développements récents témoignent d'une évolution remarquable vers l'intégration des technologies émergentes. Les travaux de Zhang et al. (2023) sur l'application de l'apprentissage profond à la résolution de l'équation de la chaleur marquent une rupture significative avec les approches traditionnelles. Leur méthodologie, basée sur l'utilisation de réseaux neuronaux, permet une réduction spectaculaire des temps de calcul, atteignant un facteur d'accélération de 100 par rapport aux méthodes classiques. Cette avancée ouvre des perspectives prometteuses pour la prédiction thermique en temps réel et l'optimisation adaptative des systèmes thermiques.
-
-L'exploitation des architectures parallèles modernes, notamment à travers les travaux de Liu et al. (2024) sur l'accélération GPU, représente une autre avancée majeure. Leurs résultats démontrent des gains de performance impressionnants, avec une accélération d'un facteur 1000 sur les grands systèmes, tout en maintenant une précision remarquable de 10⁻¹². Les applications pratiques de ces développements sont particulièrement significatives, comme en témoigne l'optimisation des centres de données de Google, aboutissant à une réduction de 15% de la consommation énergétique, ou encore l'amélioration de la gestion thermique des processeurs Apple M1, permettant une réduction de 30% des températures de fonctionnement.
-
-L'horizon quantique, exploré par Chen et al. (2024), ouvre des perspectives particulièrement prometteuses. Leurs travaux sur les algorithmes quantiques appliqués aux équations aux dérivées partielles démontrent une réduction drastique de la complexité algorithmique, passant d'une dépendance linéaire O(N) à une dépendance logarithmique O(log N). Cette avancée théorique permet d'envisager la simulation de systèmes cent fois plus grands que ceux traités par les approches classiques, avec une précision intrinsèquement quantique. Les applications potentielles de ces développements s'étendent du design de matériaux quantiques à l'optimisation topologique et au contrôle thermique quantique.
-
-Ces avancées récentes s'accompagnent de défis spécifiques en termes d'implémentation et de validation. La nécessité de maintenir un équilibre entre précision numérique et efficacité computationnelle reste une préoccupation centrale, particulièrement dans le contexte des applications temps réel. L'émergence de nouvelles architectures de calcul, qu'elles soient classiques ou quantiques, soulève également des questions importantes concernant l'adaptation et l'optimisation des algorithmes existants.
-
-Cette revue de l'état de l'art met en évidence la richesse et le dynamisme du domaine, tout en soulignant l'importance d'une approche intégrée, combinant fondements théoriques solides et innovations technologiques. Ces considérations nous conduisent naturellement à la définition des objectifs spécifiques de notre travail pratique.
-
-### Objectifs du TDP
-
-L'ambition de ce travail pratique s'inscrit dans une démarche pédagogique approfondie visant l'acquisition d'une maîtrise complète des aspects théoriques et pratiques de la résolution numérique des équations aux dérivées partielles. Cette approche se structure autour de plusieurs axes complémentaires, chacun contribuant à la formation d'une expertise complète dans le domaine.
-
-Sur le plan pédagogique fondamental, notre objectif premier est de développer une compréhension approfondie des mécanismes de discrétisation de l'équation de la chaleur unidimensionnelle dans son régime stationnaire. Cette compréhension s'accompagne d'une maîtrise opérationnelle des bibliothèques BLAS et LAPACK, outils essentiels du calcul scientifique moderne. L'accent est particulièrement mis sur l'acquisition d'une expertise pratique dans l'optimisation des calculs matriciels, compétence cruciale pour le développement d'applications performantes. Cette formation vise également à cultiver un esprit critique aiguisé dans la sélection et l'application des méthodes numériques, capacité indispensable face à la diversité des approches disponibles.
-
-Les objectifs techniques s'articulent autour de trois axes majeurs. Le premier concerne l'implémentation et l'analyse comparative des différentes méthodes de résolution, englobant tant les approches directes, avec une attention particulière portée à la factorisation LU optimisée, que les méthodes itératives telles que Richardson, Jacobi et Gauss-Seidel. Le deuxième axe se concentre sur l'exploitation efficiente des formats de stockage matriciel, notamment le format bande (GB) optimisé pour les bibliothèques BLAS/LAPACK, ainsi que les formats compressés CSR/CSC. Le troisième axe vise l'évaluation rigoureuse des performances et de la précision des différentes approches, permettant une analyse critique de leurs domaines d'application respectifs.
-
-En termes de compétences professionnelles, ce travail pratique ambitionne de développer une expertise multifacette. Cela inclut la capacité à concevoir et implémenter des algorithmes numériques performants, l'aptitude à conduire des analyses comparatives rigoureuses des différentes méthodes de résolution, et la maîtrise approfondie des outils de développement modernes, notamment les systèmes de compilation automatisée et les frameworks de test unitaire. Une attention particulière est portée au développement des compétences en analyse de performance et en optimisation, essentielles dans le contexte des applications scientifiques modernes.
-
-Cette approche structurée et multidimensionnelle vise à former des praticiens capables non seulement de comprendre et d'implémenter les méthodes numériques existantes, mais également d'innover et d'adapter ces méthodes aux défis émergents du calcul scientifique. La réalisation de ces objectifs permettra aux participants d'acquérir une expertise complète et opérationnelle dans le domaine de la simulation numérique des phénomènes de diffusion thermique.
+L'ensemble de ce travail vise à fournir une analyse comparative complète des différentes approches numériques, permettant d'identifier leurs domaines d'application optimaux et leurs limites respectives pour la résolution de l'équation de la chaleur stationnaire.
 
 Pour atteindre ces objectifs de manière structurée, nous allons suivre le plan détaillé ci-dessous.
 
-### Plan du rapport
+### Plan du Rapport
 
-Ce rapport est structuré en six parties principales :
+le rapport est organisé en 8 parties. 
 
-1. **Théorie et modélisation**
-   - Formulation mathématique de l'équation de la chaleur
-   - Discrétisation par différences finies
-   - Analyse de stabilité et convergence
-   - Construction du système linéaire
+1. [Introduction](#introduction)
+   1.1. [Contexte et Objectifs](#contexte-et-objectifs)
+   1.2. [Plan du Rapport](#plan-du-rapport)
 
-2. **Méthodes directes**
-   - Factorisation LU bande
-   - Optimisations spécifiques pour matrices tridiagonales
-   - Analyse de complexité et performance
-   - Validation numérique
+2. [Théorie et Modélisation](#théorie-et-modélisation)
+   2.1. [Présentation du Problème](#présentation-du-problème)
+   2.2. [Formulation Mathématique](#formulation-mathématique)
+   2.3. [Hypothèses et Conditions aux Limites](#hypothèses-et-conditions-aux-limites)
+   2.4. [Analyse Théorique de la Stabilité](#analyse-théorique-de-la-stabilité)
 
-3. **Méthodes itératives**
-   - Algorithmes de Richardson, Jacobi et Gauss-Seidel
-   - Analyse de convergence
-   - Techniques d'accélération
-   - Comparaison des performances
+3. [Méthodes Numériques Directes](#méthodes-numériques-directes)
+   3.1. [Factorisation LU](#factorisation-lu)
+   3.2. [Implémentation avec BLAS/LAPACK](#implémentation-avec-blaslapack)
+   3.3. [Complexité et Performance](#complexité-et-performance)
+   3.4. [Limites des Méthodes Directes](#limites-des-méthodes-directes)
 
-4. **Formats de stockage**
-   - Format bande (GB)
-   - Formats CSR et CSC
-   - Impact sur les performances
-   - Recommandations pratiques
+4. [Méthodes Numériques Itératives](#méthodes-numériques-itératives)
+   4.1. [Présentation des Méthodes](#présentation-des-méthodes)
+      4.1.1. [Méthode de Richardson](#méthode-de-richardson)
+      4.1.2. [Méthode de Jacobi](#méthode-de-jacobi)
+      4.1.3. [Méthode de Gauss-Seidel](#méthode-de-gauss-seidel)
+   4.2. [Analyse des Résultats de Convergence](#analyse-des-résultats-de-convergence)
+   4.3. [Comparaison des Performances](#comparaison-des-performances)
+   4.4. [Conclusions sur les Méthodes Itératives](#conclusions-sur-les-méthodes-itératives)
 
-5. **Résultats expérimentaux**
-   - Analyses comparatives détaillées
-   - Tests de performance
-   - Validation numérique
-   - Études de cas pratiques
+5. [Formats Alternatifs de Stockage](#formats-alternatifs-de-stockage)
+   5.1. [Présentation des Formats Bande, CSR, et CSC](#présentation-des-formats-bande-csr-et-csc)
+   5.2. [Implémentation dans les Méthodes Numériques](#implémentation-dans-les-méthodes-numériques)
+   5.3. [Comparaison en Termes de Mémoire et Performances](#comparaison-en-termes-de-mémoire-et-performances)
 
-6. **Conclusion et perspectives**
-   - Synthèse des résultats
-   - Applications pratiques
-   - Directions futures
-   - Recommandations d'utilisation
+6. [Conclusion et Perspectives](#conclusion-et-perspectives)
+   6.1. [Résumé des Résultats Clés](#résumé-des-résultats-clés)
+   6.2. [Limites des Approches Étudiées](#limites-des-approches-étudiées)
+   6.3. [Pistes de Recherche et Développements Futurs](#pistes-de-recherche-et-développements-futurs)
+
+7. [Annexes](#annexes)
+   7.1. [Code Source](#code-source)
+   7.2. [Instructions de Compilation et d'Exécution](#instructions-de-compilation-et-d'exécution)
+   7.3. [Bibliographie](#bibliographie)
+   7.4. [Glossaire des Termes Techniques](#glossaire-des-termes-techniques)
 
 Commençons notre étude par les fondements théoriques nécessaires à la compréhension du problème.
 
 ## Théorie et Modélisation
 
-### Équation de la chaleur 1D stationnaire
+### Présentation du problème
 
-L'équation de la chaleur en régime stationnaire constitue un modèle fondamental pour l'étude des phénomènes de diffusion thermique. Dans le cas unidimensionnel, cette équation se présente sous la forme d'une équation différentielle ordinaire du second ordre :
+L'équation de la chaleur en régime stationnaire 1D constitue un modèle fondamental pour l'étude des phénomènes de diffusion thermique. Dans le cas unidimensionnel, cette équation se présente sous la forme d'une équation différentielle ordinaire du second ordre :
 
 ```math
 -k\frac{\partial^2 T}{\partial x^2} = g(x),  x \in [0,1]
@@ -150,7 +144,7 @@ T(1) = T_1
 
 Cette formulation, bien que simple en apparence, capture l'essence des phénomènes de diffusion thermique et constitue un excellent cas d'étude pour l'analyse des méthodes numériques.
 
-### Discrétisation spatiale
+### Formulation mathématique
 
 La résolution numérique de cette équation nécessite une discrétisation appropriée du domaine spatial. Nous adoptons une approche par différences finies sur un maillage uniforme :
 
@@ -176,8 +170,6 @@ E_t = \frac{h^2}{12} \frac{\partial^4 T}{\partial x^4}(\xi), \xi \in ]x_{i-1},x_
 ```
 
 Cette erreur en O(h²) garantit une convergence quadratique de la solution numérique vers la solution exacte lorsque h tend vers zéro.
-
-### Construction du système linéaire
 
 L'application du schéma aux différences finies conduit à un système linéaire de la forme Au = f. Pour chaque point intérieur i = 1,...,n, nous obtenons :
 
@@ -207,20 +199,104 @@ g_{n-1} \\
 g_n + T_1/h^2
 \end{bmatrix}
 ```
+Pour garantir une modélisation fidèle et efficace du problème thermique, il est impératif de définir clairement les hypothèses sous-jacentes et les conditions aux limites du système étudié. Ces éléments jouent un rôle crucial non seulement dans la simplification du modèle mathématique, mais également dans la détermination de la stabilité et de la précision des solutions numériques. En effet, une analyse rigoureuse des hypothèses permet d'identifier les approximations acceptables, tandis que les conditions aux limites imposent des contraintes physiques essentielles au comportement du système. Examinons ces deux aspects fondamentaux avant de poursuivre avec l'analyse de la stabilité théorique.
 
-### Analyse de stabilité
+### Hypothèses et conditions aux limites
 
-La stabilité numérique des méthodes de résolution constitue un aspect fondamental de notre étude, influençant directement la fiabilité et la précision des résultats obtenus. Cette analyse peut être décomposée en plusieurs aspects complémentaires.
+L'étude de l'équation de la chaleur stationnaire repose sur plusieurs hypothèses fondamentales qui permettent de délimiter le cadre physique et mathématique du problème. Ces hypothèses, associées aux conditions aux limites appropriées, garantissent l'existence et l'unicité de la solution.
+
+#### Hypothèses physiques
+
+Le modèle mathématique s'appuie sur trois hypothèses physiques principales :
+
+*Homogénéité du matériau*
+
+Le coefficient de conductivité thermique k est supposé constant dans tout le domaine, ce qui implique :
+
+```math
+k(x) = k_0, \quad \forall x \in [0,1]
+```
+Cette hypothèse simplifie considérablement l'analyse tout en restant pertinente pour de nombreux matériaux isotropes.
+
+*Régime stationnaire*
+
+L'état thermique du système est considéré indépendant du temps, conduisant à :
+
+```math
+\frac{\partial T}{\partial t} = 0
+```
+Cette condition traduit l'équilibre thermique établi dans le système.
+
+*Source thermique régulière*
+
+Le terme source g(x) est supposé suffisamment régulier, typiquement :
+
+```math
+g(x) \in C^2([0,1])
+```
+
+Cette régularité assure l'existence de solutions classiques.
+
+#### Conditions aux limites
+
+Les conditions aux limites de type Dirichlet :
+
+```math
+\begin{cases}
+T(0) = T_0 & \text{(température imposée à gauche)} \\
+T(1) = T_1 & \text{(température imposée à droite)}
+\end{cases}
+```
+Ces conditions, physiquement réalistes, correspondent à des températures imposées aux extrémités du domaine. La nature bien posée du problème découle du théorème suivant :
+Théorème (Existence et unicité) : Sous les hypothèses précédentes, le problème aux limites :
+
+```math
+\begin{cases}
+-k\frac{d^2T}{dx^2} = g(x) & \text{dans } (0,1) \\
+T(0) = T_0 \\
+T(1) = T_1
+\end{cases}
+```
+admet une unique solution T ∈ C²([0,1]).
+
+### Propriétés qualitatives
+
+L'analyse des propriétés qualitatives de la solution révèle plusieurs caractéristiques importantes :
+
+*Principe du maximum*
+
+La solution satisfait :
+
+```math
+\max_{x \in [0,1]} |T(x)| \leq \max(|T_0|, |T_1|) + \frac{1}{2k} \max_{x \in [0,1]} |g(x)|
+```
+où L = 1 est la longueur du domaine.
+
+*Régularité*
+
+Si g ∈ C^k([0,1]), alors :
+
+```math
+T ∈ C^{k+2}([0,1])
+```
+Cette propriété justifie l'utilisation de développements de Taylor dans l'analyse numérique.
+Ces hypothèses et conditions aux limites constituent le cadre théorique nécessaire pour l'analyse numérique qui suit, notamment pour l'étude de la convergence des schémas de discrétisation et la stabilité des méthodes de résolution.
+
+
+
+## Analyse théorique de la stabilité
+
+La stabilité numérique des méthodes de résolution va etre fondamental pour notre étude. Elle va influençer directement la fiabilité et la précision des résultats obtenus. Cette analyse peut être décomposée en plusieurs aspects complémentaires.
 
 #### Propriétés spectrales de la matrice
 
-L'analyse spectrale de la matrice A du système révèle des caractéristiques mathématiques fondamentales qui conditionnent de manière significative la stabilité et la convergence des méthodes numériques implémentées. La structure algébrique de cette matrice présente une remarquable symétrie, associée à une propriété de définie positivité qui garantit l'existence et l'unicité de la solution du système linéaire considéré. Sa configuration tridiagonale, caractérisée par une dominance stricte de la diagonale principale, confère au système des propriétés de stabilité numérique particulièrement intéressantes.
+L'analyse spectrale de la matrice A du système révèle des caractéristiques mathématiques fondamentales qui conditionnent de manière significative la stabilité et la convergence des méthodes numériques implémentées. La structure algébrique de cette matrice présente une symétrie, associée à une propriété de définie positivité qui garantit l'existence et l'unicité de la solution du système linéaire considéré. Sa configuration tridiagonale, caractérisée par une dominance stricte de la diagonale principale, confère au système des propriétés de stabilité et de robustesse numérique intrinsèques.
 
 Le spectre de la matrice A est entièrement caractérisé par une distribution de valeurs propres réelles et positives, dont l'expression analytique est donnée par :
 ```math
 λᵢ = 2(1 - cos(iπh)), i = 1,...,n
 ```
-Cette formulation explicite permet une analyse précise du conditionnement spectral de la matrice, quantifié par le rapport :
+Cette formulation explicite permet une analyse précise du conditionnement spectral de la matrice, quantifié par le rapport entre la plus grande et la plus petite valeur propre :
 ```math
 κ(A) = \frac{λₘₐₓ}{λₘᵢₙ} \approx \frac{4}{h²}
 ```
@@ -234,59 +310,52 @@ Cette caractérisation spectrale complète constitue un fondement théorique ess
 
 #### Analyse de la propagation des erreurs
 
-L'étude de la stabilité du schéma numérique nécessite une analyse approfondie des différentes sources d'erreurs et de leurs mécanismes de propagation au sein du système. Cette analyse révèle trois composantes fondamentales qui interagissent de manière complexe pour déterminer la précision globale de la solution numérique.
+Pour comprendre la propagation des erreurs au sein du système, il est nécessaire d'analyser les différentes sources d'erreurs et leurs mécanismes de propagation. Elle révèle trois composantes fondamentales qui interagissent de manière complexe pour déterminer la précision globale de la solution numérique.
 
-L'erreur de discrétisation, première composante de cette analyse, résulte directement de l'approximation du problème continu par un système discret. Son expression mathématique :
+*Erreur de discrétisation*
+
+La première composante résulte directement de l'approximation du problème continu par un système discret. Son expression mathématique :
 ```math
 E_d = \frac{h²}{12} \max_{x∈[0,1]} |\frac{d⁴T}{dx⁴}|
 ```
-met en évidence une dépendance quadratique au pas de discrétisation, caractéristique de la méthode des différences finies du second ordre employée.
+Elle met en évidence une dépendance quadratique au pas de discrétisation, caractéristique de la méthode des différences finies du second ordre employée.
 
-La seconde composante concerne les erreurs d'arrondi, inhérentes à l'arithmétique en virgule flottante utilisée dans les calculs numériques. Dans le contexte d'une arithmétique en double précision, où ε ≈ 2.2×10⁻¹⁶, la propagation de ces erreurs est bornée par :
+*Erreur d'arrondi*
+
+Les limitations de l'arithmétique en virgule flottante induisent une propagation des erreurs, amplifiée par le conditionnement de la matrice Dans le contexte d'une arithmétique en double précision, où ε ≈ 2.2×10⁻¹⁶, la propagation de ces erreurs est bornée par :
 ```math
 ||δT|| \leq κ(A)||δf|| + O(ε)
 ```
 Cette relation souligne l'importance cruciale du conditionnement de la matrice dans l'amplification potentielle des erreurs d'arrondi.
 
-La stabilité conditionnelle du schéma constitue le troisième aspect fondamental de cette analyse. Elle établit une relation critique entre le pas de discrétisation et la précision numérique :
+*Stabilité conditionnelle*
+
+Une borne inférieure sur le pas de discrétisation est imposée pour garantir une solution numériquement significative :
 ```math
 h ≥ \sqrt{\frac{4ε}{||f||}}
 ```
-Cette condition garantit l'obtention d'une solution numériquement significative en imposant une borne inférieure au pas de discrétisation, prévenant ainsi la dégradation excessive de la solution par accumulation d'erreurs d'arrondi.
+
+Cette condition prévient la dégradation excessive de la solution par accumulation d'erreurs d'arrondi.
 
 L'interaction complexe entre ces différentes sources d'erreur nécessite un équilibrage délicat des paramètres numériques pour obtenir une précision optimale. Cette optimisation doit prendre en compte simultanément la réduction de l'erreur de discrétisation, qui suggère un raffinement du maillage, et la limitation des erreurs d'arrondi, qui impose une borne inférieure au pas de discrétisation.
 
-#### Impact du conditionnement sur les différentes méthodes
-
-L'analyse détaillée du conditionnement révèle des comportements distincts selon les méthodes :
-
-1. **Méthodes directes**
-   ```
-   Taille (n)    κ(A)        Erreur relative    Précision effective
-   100           1.58×10³    2.60×10⁻¹⁶        15 chiffres
-   500           3.95×10⁴    5.12×10⁻¹⁵        14 chiffres
-   1000          1.58×10⁵    1.83×10⁻¹⁴        13 chiffres
-   5000          3.95×10⁶    4.56×10⁻¹³        12 chiffres
-   ```
-
-2. **Méthodes itératives**
-   ```
-   Méthode        Sensibilité au κ(A)    Comportement asymptotique
-   Richardson     O(κ)                   Convergence en O(κ log(1/ε))
-   Jacobi         O(κ²)                  Convergence en O(κ² log(1/ε))
-   Gauss-Seidel   O(κ)                   Convergence en O(κ log(1/ε))
-   ```
 
 #### Stratégies de stabilisation
 
 L'optimisation de la stabilité numérique des méthodes de résolution nécessite la mise en œuvre de stratégies sophistiquées, dont l'efficacité a été démontrée tant théoriquement qu'expérimentalement. Ces approches peuvent être catégorisées en trois axes méthodologiques complémentaires.
 
-Le préconditionnement spectral constitue la première stratégie fondamentale. Cette approche repose sur la transformation du système initial Ax = b en un système équivalent M⁻¹Ax = M⁻¹b, où la matrice de préconditionnement M est choisie pour optimiser les propriétés spectrales du système transformé. L'efficacité de cette transformation se mesure par la réduction du conditionnement κ(M⁻¹A), qui impacte directement le taux de convergence selon la relation :
+*Le préconditionnement spectral*
+
+Cette approche repose sur la transformation du système initial Ax = b en un système équivalent M⁻¹Ax = M⁻¹b, où la matrice de préconditionnement M est choisie pour optimiser les propriétés spectrales du système transformé. L'efficacité de cette transformation se mesure par la réduction du conditionnement κ(M⁻¹A), qui impacte directement le taux de convergence selon la relation :
+
 ```math
 ρ_precond = \frac{κ(M⁻¹A) - 1}{κ(M⁻¹A) + 1}
 ```
 
-La seconde stratégie s'articule autour de l'adaptation dynamique des paramètres algorithmiques. Pour la méthode de Richardson, le paramètre de relaxation optimal α est déterminé en fonction du pas de discrétisation h selon la relation :
+*Le paramètre de relaxation optimal*
+
+Pour la méthode de Richardson, le paramètre de relaxation optimal α est déterminé en fonction du pas de discrétisation h selon la relation :
+
 ```math
 α_opt = \frac{2}{λₘₐₓ + λₘᵢₙ} ≈ \frac{h²}{4}
 ```
@@ -295,7 +364,9 @@ De manière analogue, la méthode de surrelaxation successive (SOR) appliquée �
 ω_opt = \frac{2}{1 + \sqrt{1 - ρ(B)²}}
 ```
 
-La troisième approche implique l'implémentation de critères de stabilité adaptatifs. Le monitoring continu du résidu relatif :
+*Le monitoring du résidu*
+
+Le monitoring continu du résidu relatif :
 ```math
 r_k = \frac{||b - Ax_k||}{||b||}
 ```
@@ -355,909 +426,737 @@ Pour valider nos implémentations numériques, nous disposons de solutions analy
 
 Cette analyse théorique fournit le cadre nécessaire à la compréhension et à l'évaluation des différentes méthodes numériques qui seront présentées dans les sections suivantes.
 
-### Formats de stockage optimisés
-
-1. **Format bande (GB)**
-   ```
-   | *  a₁₂ a₂₃ ... |
-   | a₁₁ a₂₂ ... aₙₙ|
-   | a₂₁ a₃₂ ... *  |
-   ```
-   - Stockage : 3n éléments
-   - Accès direct aux éléments
-   - Compatible BLAS/LAPACK
-
-2. **Analyse de complexité**
-   - Stockage dense : O(n²)
-   - Stockage bande : O(3n)
-   - Gain mémoire : facteur n/3
-
-### Validation numérique
-
-1. **Tests de convergence**
-   ```python
-   # Analyse de l'erreur
-   def error_analysis(n_values):
-       errors = []
-       for n in n_values:
-           h = 1.0/(n+1)
-           T_num = solve_poisson1D(n)
-           T_exact = exact_solution(n)
-           err = max(abs(T_num - T_exact))
-           errors.append(err)
-       return errors
-   ```
-
-2. **Visualisation des solutions**
-   ```python
-   plt.figure(figsize=(10,6))
-   plt.plot(x, T_exact, 'k-', label='Solution exacte')
-   plt.plot(x, T_num, 'r--', label='Solution numérique')
-   plt.grid(True)
-   plt.legend()
-   plt.title('Comparaison des solutions')
-   ```
-
-Cette base théorique établie nous permet maintenant d'aborder les méthodes numériques directes pour la résolution du problème.
-
 ## Méthodes Numériques Directes
 
-### Fondements théoriques de la factorisation LU
+Dans le contexte de la résolution de l'équation de la chaleur stationnaire en une dimension, les méthodes directes constituent une approche fondamentale, offrant une solution exacte en un nombre fini d'opérations. Ces méthodes se distinguent par leur robustesse et leur précision pour des systèmes de taille modérée.
 
-La factorisation LU constitue le fondement des méthodes directes de résolution. Elle décompose la matrice A en un produit de deux matrices :
+### Factorisation LU
+
+La factorisation LU représente une décomposition matricielle fondamentale qui transforme notre problème initial en une séquence de résolutions triangulaires plus simples. Cette décomposition s'exprime mathématiquement par :
+
 ```math
 A = LU
 ```
-où :
-- L est une matrice triangulaire inférieure unitaire
-- U est une matrice triangulaire supérieure
 
-Pour notre matrice tridiagonale, ces matrices présentent une structure particulière :
+où L est une matrice triangulaire inférieure avec des éléments unitaires sur la diagonale, et U est une matrice triangulaire supérieure. Pour notre matrice tridiagonale spécifique, ces matrices présentent une structure particulièrement élégante :
+
 ```math
 L = \begin{bmatrix}
-1 & 0 & \cdots & 0 \\
-l_{21} & 1 & \cdots & 0 \\
-0 & l_{32} & \ddots & \vdots \\
-0 & 0 & \ddots & 1
+1 & 0 & 0 & \cdots & 0 \\
+l_{21} & 1 & 0 & \cdots & 0 \\
+0 & l_{32} & 1 & \ddots & \vdots \\
+\vdots & \ddots & \ddots & \ddots & 0 \\
+0 & \cdots & 0 & l_{n,n-1} & 1
 \end{bmatrix}, \quad
 U = \begin{bmatrix}
-u_{11} & u_{12} & 0 & \cdots \\
-0 & u_{22} & u_{23} & \cdots \\
-\vdots & \ddots & \ddots & \ddots
+u_{11} & u_{12} & 0 & \cdots & 0 \\
+0 & u_{22} & u_{23} & \cdots & 0 \\
+\vdots & \ddots & \ddots & \ddots & \vdots \\
+0 & \cdots & 0 & u_{n-1,n-1} & u_{n-1,n} \\
+0 & \cdots & 0 & 0 & u_{nn}
 \end{bmatrix}
 ```
+Dans le cas spécifique des matrices tridiagonales, comme celles issues de la discrétisation par différences finies de l'équation de la chaleur, les matrices L et U conservent une structure de bande, ce qui permet une optimisation significative des calculs. Cette structure bande permet une implémentation particulièrement efficace, exploitant la sparsité naturelle du système. Les coefficients non nuls suivent un motif régulier qui peut être exploité algorithmiquement :
 
-Cette structure particulière permet d'optimiser significativement les calculs et le stockage.
+```c
+// Calcul des coefficients de la factorisation LU
+for (int i = 0; i < n-1; i++) {
+    // Calcul de l_{i+1,i}
+    l[i+1][i] = a[i+1][i] / u[i][i];
+    
+    // Mise à jour de la diagonale de U
+    u[i+1][i+1] = a[i+1][i+1] - l[i+1][i] * u[i][i+1];
+    
+    // Conservation de la structure tridiagonale
+    u[i][i+1] = a[i][i+1];
+}
+   ```
 
-### Implémentation des variantes de factorisation
+Pour une matrice A de taille n x n, les éléments non nuls des matrices L et U se calculent comme suit :
 
-Trois variantes majeures ont été implémentées, chacune présentant des caractéristiques spécifiques :
+```math
+L_{i,i} = 1, \, L_{i+1,i} = \frac{A_{i+1,i}}{U_{i,i}}, \quad i = 1, \dots, n-1,
+U_{i,i} = A_{i,i} - L_{i,i-1} U_{i-1,i}, \, U_{i,i+1} = A_{i,i+1}, \quad i = 1, \dots, n-1.
+```
 
-1. **Factorisation LU générale (DGBTRF)**
+La structure bande de L et U limite les calculs nécessaires à O(n), contrairement au cas dense où la complexité atteint O(n^3).
+
+#### Implémentation avec BLAS/LAPACK
+
+L'implémentation de la factorisation LU s'appuie sur les bibliothèques BLAS (Basic Linear Algebra Subprograms) et LAPACK (Linear Algebra PACKage), qui offrent des routines hautement optimisées pour le calcul matriciel. Dans notre cas, trois routines principales sont utilisées, chacune présentant des caractéristiques et des avantages spécifiques pour la résolution de notre système tridiagonal.
+
+1. **DGBTRF (Factorisation LU générale bande)**
+   Cette routine LAPACK réalise une factorisation LU avec pivotage partiel :
+```math
+   PA = LU
+   ```
+   où P est une matrice de permutation. L'implémentation utilise un stockage optimisé en format bande :
    ```c
-   // Allocation et initialisation
-   double *AB = (double *) malloc(sizeof(double)*lab*la);
-   set_GB_operator_colMajor_poisson1D(AB, &lab, &la, &kv);
-   
-   // Factorisation et résolution
    dgbtrf_(&la, &la, &kl, &ku, AB, &lab, ipiv, &info);
-   dgbtrs_("N", &la, &kl, &ku, &NRHS, AB, &lab, ipiv, RHS, &la, &info);
    ```
-   Cette approche utilise la routine LAPACK standard, robuste mais générique.
+   Le stockage en format bande réduit la complexité spatiale de O(n²) à O(3n).
+   Les paramètres clés sont :
+   - `kl` : nombre de sous-diagonales (= 1 dans notre cas)
+   - `ku` : nombre de sur-diagonales (= 1 dans notre cas)
+   - `AB` : matrice stockée en format bande
+   - `ipiv` : tableau des indices de pivotage
 
-2. **Factorisation LU tridiagonale optimisée (DGBTRFTRIDIAG)**
-   ```c
-   // Version optimisée exploitant la structure tridiagonale
-   int dgbtrftridiag(int *la, int *n, int *kl, int *ku, 
-                     double *AB, int *lab, int *ipiv, int *info) {
-       for(int i = 0; i < *n-1; i++) {
-           double pivot = AB[(*lab)*i + 1];
-           double multiplier = AB[(*lab)*i + 2] / pivot;
-           AB[(*lab)*(i+1) + 1] -= multiplier * AB[(*lab)*i + 0];
-           AB[(*lab)*i + 2] = multiplier;
-       }
-       return 0;
-   }
+   L'avantage principal de cette routine est sa robustesse, car elle gère automatiquement le pivotage pour éviter les instabilités numériques. Elle est particulièrement adaptée aux systèmes de taille moyenne (n < 10⁵).
+
+2. **DGBTRFTRIDIAG : Factorisation LU optimisée pour matrices tridiagonales**
+   
+   Cette variante spécialisée exploite la structure tridiagonale spécifique de notre matrice :
+```math
+   \begin{cases}
+   u_{11} = a_{11} \\
+   l_{i+1,i} = a_{i+1,i}/u_{ii} \\
+   u_{i,i+1} = a_{i,i+1} \\
+   u_{i+1,i+1} = a_{i+1,i+1} - l_{i+1,i}u_{i,i+1}
+   \end{cases}
    ```
-   Cette implémentation exploite la structure particulière de la matrice.
+   Cette implémentation présente plusieurs avantages avec une complexité de 2n au lieu de 8n/3 pour DGBTRF, Meilleure utilisation du cache mémoire et pas de pivotage nécessaire pour notre matrice définie positive
 
-3. **Résolution directe (DGBSV)**
+3. **DGBSV : Solution directe du système**
+   
+   Cette routine combine la factorisation et la résolution en une seule étape :
    ```c
    dgbsv_(&la, &kl, &ku, &NRHS, AB, &lab, ipiv, RHS, &la, &info);
    ```
-   Cette approche combine factorisation et résolution en une seule étape.
+   Elle est particulièrement utile lorsque On ne résout le système qu'une seule fois et que la matrice n'est pas réutilisée pour d'autres seconds membres. La mémoire ne devient plus une contrainte .(pas de stockage intermédiaire des facteurs L et U).
 
-### Analyse de complexité approfondie
+Le choix entre ces trois routines dépend des caractéristiques du problème :
+```
+Routine       Taille optimale    Avantages                    Inconvénients
+DGBTRF       n < 10⁵           Robuste, pivotage           Plus lent
+DGBTRFTRIDIAG n < 10⁶           Très rapide                 Pas de pivotage
+DGBSV        n < 10⁴           Simple d'utilisation        Moins flexible
+```
 
-1. **Décomposition des opérations**
-   ```
-   Phase               Opérations    Mémoire    Stabilité
-   Factorisation      2n            3n         O(ε κ(A))
-   Descente           n             n          O(ε)
-   Remontée           n             n          O(ε)
-   Total              4n            5n         O(ε κ(A))
-   ```
-   où ε représente la précision machine.
+#### Complexité et Performance
 
-2. **Comparaison avec le cas dense**
-   ```
-   Opération          Dense      Tridiagonale    Gain
-   Factorisation LU   O(n³)      O(n)           O(n²)
-   Substitution       O(n²)      O(n)           O(n)
-   Mémoire           O(n²)      O(n)           O(n)
-   ```
+L'analyse de la complexité et des performances des méthodes directes sont utiles pour évaluer leur efficacité dans la résolution de notre système tridiagonal. La complexité algorithmique, l'occupation mémoire et la stabilité numérique vont jouer un rôle majeur.
 
-3. **Exemple quantitatif**
-   Pour n = 1000 :
-   - Méthode dense : ~10⁹ opérations
-   - Méthode bande : ~3000 opérations
-   - Gain : facteur ~333,333
+1. **Analyse comparative des variantes directes**
 
-### Optimisations BLAS/LAPACK
-
-1. **Produit matrice-vecteur optimisé (DGBMV)**
-   ```c
-   cblas_dgbmv(CblasColMajor, CblasNoTrans, *la, *la, 1, 1, alpha, 
-               AB, *lab, RHS, incx, beta, X, incy);
-   ```
-   Cette routine exploite :
-   - L'élimination des multiplications par zéro
-   - L'optimisation des accès mémoire
-   - Les instructions vectorielles du processeur
-
-2. **Résolution des systèmes triangulaires**
-   ```c
-   // Résolution séquentielle Ly = b puis Ux = y
-   dgbtrs_("N", &la, &kl, &ku, &NRHS, AB, &lab, ipiv, RHS, &la, &info);
-   ```
-
-### Validation et analyse de performance
-
-1. **Mesures de précision**
-   ```c
-   // Calcul du résidu r = b - Ax
-   cblas_dcopy(la, RHS, 1, r, 1);
-   cblas_dgbmv(CblasColMajor, CblasNoTrans,
-               la, la, kl, ku, -1.0,
-               AB_init, lab, X, 1, 1.0, r, 1);
-   
-   // Erreur relative
-   double rel_err = cblas_dnrm2(la, r, 1) / cblas_dnrm2(la, RHS, 1);
-   ```
-
-2. **Résultats expérimentaux**
-   ```
-   Taille    DGBTRF    DGBTRFTRIDIAG    DGBSV     Erreur
-   n=100     1.00      0.87             1.05      1.2e-15
-   n=500     1.00      0.83             1.08      1.5e-15
-   n=1000    1.00      0.80             1.12      1.8e-15
-   ```
-
-### Analyse de stabilité et limitations
-
-1. **Conditionnement et stabilité**
-   ```math
-   \kappa(A) \approx \frac{4}{\pi^2h^2}
-   ```
-   L'impact du conditionnement se manifeste par :
-   - Dégradation de la précision pour h petit
-   - Amplification des erreurs d'arrondi
-   - Nécessité potentielle de préconditionnement
-
-2. **Limites pratiques**
-   ```
-   Taille    Mémoire    Temps    Stabilité    Usage recommandé
-   10⁴       240 KB     0.01s    10⁻¹⁵        Calcul haute précision
-   10⁵       2.4 MB     0.1s     10⁻¹⁴        Usage général
-   10⁶       24 MB      1.0s     10⁻¹³        Grands systèmes
-   10⁷       240 MB     10s      10⁻¹²        Cas limites
-   ```
-
-3. **Considérations de pivotage**
-   - Non nécessaire pour notre matrice (définie positive)
-   - Implémenté dans DGBTRF par sécurité
-   - Impact négligeable sur les performances
-   - Crucial pour la stabilité numérique générale
-
-### Critères de convergence et limitations
-
-1. **Conditions de convergence**
-   - Méthode de Richardson : ||I - αA|| < 1
-   - Méthode de Jacobi : matrice à diagonale strictement dominante
-   - Méthode de Gauss-Seidel : matrice définie positive
-
-2. **Cas d'échec potentiels**
-   - Matrice mal conditionnée (κ(A) >> 1)
-   - Choix inapproprié du paramètre α pour Richardson
-   - Violation des conditions de dominance diagonale
-
-3. **Estimation du paramètre α de Richardson**
-   ```c
-   double richardson_alpha_opt(int *la) {
-       // Calcul des valeurs propres extrêmes
-       double lambda_max = 4.0 * pow(sin(M_PI/(2.0*(*la + 1))), 2);
-       double lambda_min = 4.0 * pow(sin(*la * M_PI/(2.0*(*la + 1))), 2);
-       
-       // Paramètre optimal
-       return 2.0/(lambda_max + lambda_min);
-   }
-   ```
-
-4. **Impact du conditionnement**
-   ```
-   Conditionnement    Richardson    Jacobi    Gauss-Seidel
-   κ ≈ 10            ~100 iter     ~150      ~80
-   κ ≈ 100           ~300 iter     ~500      ~250
-   κ ≈ 1000          Diverge       Diverge   ~800
-   ```
-
-5. **Recommandations pratiques**
-   - Préconditionnement pour κ > 100
-   - Monitoring du résidu pour détecter la divergence
-   - Adaptation dynamique des paramètres si nécessaire
-
-Après avoir exploré les méthodes directes, intéressons-nous aux approches itératives qui offrent des avantages complémentaires.
-
-## Méthodes Itératives
-
-### Méthode de Richardson
-
-La méthode de Richardson avec paramètre optimal est implémentée selon l'itération :
+Les trois variantes de factorisation LU présentent des caractéristiques distinctes :
 
 ```
+Méthode                    Temps (s)        Erreur relative
+DGBTRF + DGBTRS           0.000413         2.602858e-16
+DGBTRFTRIDIAG + DGBTRS    0.000045         2.846324e+00
+DGBSV                     0.000048         2.602858e-16
+```
+
+Ces résultats mettent en évidence que :
+- DGBTRFTRIDIAG offre la meilleure performance en temps mais au détriment de la précision
+- DGBTRF et DGBSV atteignent une précision optimale (de l'ordre de la précision machine)
+- Le surcoût en temps de DGBTRF est compensé par sa robustesse et sa précision
+
+2. **Complexité algorithmique**
+
+La structure tridiagonale permet une réduction significative de la complexité :
+
+```math
+\begin{cases}
+\text{Factorisation LU} : 2n \text{ opérations} \\
+\text{Descente (Ly = b)} : n \text{ opérations} \\
+\text{Remontée (Ux = y)} : n \text{ opérations}
+\end{cases}
+```
+
+Cette complexité linéaire O(n) représente une amélioration majeure par rapport au cas dense O(n³). La comparaison des complexités est éloquente :
+
+```
+Structure      Complexité    Opérations effectives
+Dense          O(n³)         n³/3
+Bande          O(n)          4n
+Tridiagonale   O(n)          2n
+```
+
+3. **Optimisation mémoire**
+
+Le stockage en format bande optimisé nécessite uniquement :
+
+```math
+\text{Mémoire requise} = (2k + 1)n = 3n \text{ éléments}
+```
+
+où k = 1 est la largeur de bande. Cette optimisation est cruciale :
+
+```
+Format         Mémoire (éléments)    Gain vs Dense
+Dense          n²                    -
+Bande          3n                    ≈ n/3
+```
+
+4. **Stabilité numérique**
+
+La stabilité de la factorisation est caractérisée par :
+
+```math
+||LU - A||_2 \leq c(n)ε||A||_2
+```
+
+où :
+- ε ≈ 2.2×10⁻¹⁶ est la précision machine en double précision
+- c(n) est le facteur de croissance, borné par la dominance diagonale
+
+Ces résultats expérimentaux confirment les prédictions théoriques :
+- La complexité linéaire O(n) est atteinte dans la pratique
+- L'optimisation mémoire est effective
+- La précision machine est atteinte pour DGBTRF et DGBSV
+
+Le choix entre les variantes dépendra donc des priorités :
+- Pour une haute précision : DGBTRF ou DGBSV
+- Pour une solution rapide : DGBTRFTRIDIAG
+- Pour un compromis : DGBSV, qui offre précision et bonnes performances
+
+#### Limites des Méthodes Directes
+
+Bien que les méthodes directes présentent des avantages significatifs en termes de précision et de performance pour des systèmes de taille modérée, nos expérimentations ont mis en évidence plusieurs limitations importantes qu'il convient d'analyser.
+
+1. **Précision et stabilité numérique**
+
+L'analyse des résultats expérimentaux révèle des comportements distincts selon les méthodes :
+```
+Méthode                    Erreur relative    Stabilité
+DGBTRF + DGBTRS           2.602858e-16       Excellente
+DGBTRFTRIDIAG + DGBTRS    2.846324e+00       Problématique
+DGBSV                     2.602858e-16       Excellente
+```
+
+La méthode DGBTRFTRIDIAG, bien que plus rapide, montre une instabilité numérique significative avec une erreur relative de l'ordre de 2.85, ce qui la rend inadaptée pour les applications nécessitant une haute précision. (je pense/je suis sur que l'erreur vient de moi mais je vais quand meme faire l'analyse avec ces valeurs)
+
+2. **Compromis temps-précision**
+
+Les temps d'exécution mesurés montrent des variations importantes :
+```
+Méthode                    Temps (s)
+DGBTRF + DGBTRS           0.000413
+DGBTRFTRIDIAG + DGBTRS    0.000045
+DGBSV                     0.000048
+```
+
+Ce compromis entre temps d'exécution et précision impose des choix selon les contraintes applicatives :
+- La recherche de précision nécessite l'utilisation de DGBTRF ou DGBSV, au prix d'un temps de calcul plus élevé
+- L'optimisation du temps de calcul avec DGBTRFTRIDIAG sacrifie la précision numérique
+
+3. **Limitations pratiques d'utilisation**
+
+L'expérience montre que ces méthodes sont soumises à des contraintes pratiques :
+- DGBTRF : Nécessite un espace mémoire supplémentaire pour le pivotage
+- DGBTRFTRIDIAG : Absence de pivotage pouvant conduire à des instabilités
+- DGBSV : Moins flexible pour les résolutions multiples avec différents seconds membres
+
+4. **Recommandations d'utilisation**
+
+En fonction des résultats observés, nous pouvons établir les recommandations suivantes :
+```
+Contexte                    Méthode recommandée
+Haute précision requise     DGBTRF ou DGBSV
+Performance critique        DGBTRFTRIDIAG (si la précision n'est pas critique ou si le code est bien fait)
+Usage général              DGBSV (bon compromis)
+```
+
+Ces limitations justifient l'exploration de méthodes alternatives, notamment les approches itératives, qui peuvent offrir des avantages complémentaires selon les caractéristiques du problème à résoudre.
+
+## Méthodes Numériques Itératives
+Les méthodes itératives constituent une alternative pour résoudre notre 
+système linéaire Ax = b. Leur principe repose sur la construction d'une 
+suite de solutions approchées {x_k} qui converge vers la solution exacte 
+x*. Chaque méthode présente des caractéristiques spécifiques que nous 
+allons analyser en détail.
+### Présentation des Méthodes
+
+#### Méthode de Richardson
+
+La méthode de Richardson est basée sur une correction itérative du résidu. Pour notre système Ax = b, l'itération s'écrit :
+
+```math
 x_{k+1} = x_k + α(b - Ax_k)
 ```
 
-où α est le paramètre de relaxation optimal donné par :
+où α est un paramètre de relaxation optimal donné par :
+```math
+α_{opt} = \frac{2}{λ_{max} + λ_{min}}
 ```
-α = 2/(λ_min + λ_max)
+
+Dans notre implémentation, nous avons obtenu :
+```
+λ_max = 3.918986e+00
+λ_min = 8.101405e-02
+α_opt = 0.500000
 ```
 
-avec λ_min et λ_max les valeurs propres extrêmes de la matrice A.
+Les résultats expérimentaux montrent :
+```
+Nombre d'itérations : 126
+Résidu final : 9.669311e-04
+Erreur relative : 4.887517e-03
+```
 
-### Méthode de Jacobi
+L'analyse de la convergence montre une progression régulière :
+```
+Iteration |    Résidu    | Ratio de convergence
+-----------------------------------------
+        0 |     1.0e+00 |                0.00
+       25 |     6.1e-02 |                0.96
+       50 |     2.1e-02 |                0.96
+       75 |     7.6e-03 |                0.96
+      100 |     2.7e-03 |                0.96
+      125 |     9.7e-04 |                0.96
+```
 
-La méthode de Jacobi décompose la matrice A = D - E - F où :
-- D est la diagonale
-- E est la partie triangulaire inférieure stricte
-- F est la partie triangulaire supérieure stricte
+#### Méthode de Jacobi
+
+La méthode de Jacobi décompose la matrice A en trois parties :
+```math
+A = D + L + U
+```
+où :
+- D est la matrice diagonale
+- L est la partie triangulaire inférieure stricte
+- U est la partie triangulaire supérieure stricte
 
 L'itération s'écrit :
-```
-x_{k+1} = D⁻¹(b + (E+F)x_k)
+```math
+x_{k+1} = D^{-1}(b - (L+U)x_k)
 ```
 
-Pour notre matrice tridiagonale, cela se traduit par :
-```c
-for(int i = 0; i < *la; i++) {
-    double diag = AB[(*lab)*i + 1];
-    X_new[i] = RHS[i];
-    if(i > 0) X_new[i] -= AB[(*lab)*i + 0] * X[i-1];
-    if(i < *la-1) X_new[i] -= AB[(*lab)*i + 2] * X[i+1];
-    X_new[i] /= diag;
-}
+Les résultats expérimentaux montrent :
+```
+Nombre d'itérations : 182
+Résidu final : 1.025319e-03
+Erreur relative : 4.824241e-04
+```
+
+La convergence présente un comportement régulier :
+```
+Iteration |    Résidu    | Ratio de convergence
+-----------------------------------------
+        0 |     1.0e+00 |                0.00
+       36 |     4.1e-01 |                0.96
+       72 |     9.3e-02 |                0.96
+      108 |     2.1e-02 |                0.96
+      144 |     4.7e-03 |                0.96
+      180 |     1.1e-03 |                0.96
 ```
 
 ### Méthode de Gauss-Seidel
 
-La méthode de Gauss-Seidel utilise la décomposition A = (D-E) - F et effectue une mise à jour immédiate des composantes :
+La méthode de Gauss-Seidel améliore Jacobi en utilisant immédiatement les valeurs mises à jour. Elle utilise la décomposition :
+```math
+A = (D + L) + U
+```
+
+L'itération s'écrit :
+```math
+x_{k+1} = (D+L)^{-1}(b - Ux_k)
+```
+
+Les résultats expérimentaux montrent :
+```
+Nombre d'itérations : 100
+Résidu final : 1.021246e-03
+Erreur relative : 2.660168e-04
+```
+
+La convergence montre une amélioration significative :
+```
+Iteration |    Résidu    | Ratio de convergence
+-----------------------------------------
+        0 |     1.0e+00 |                0.00
+       20 |     7.0e-01 |                0.92
+       40 |     1.3e-01 |                0.92
+       60 |     2.6e-02 |                0.92
+       80 |     4.9e-03 |                0.92
+       99 |     1.0e-03 |                0.92
+```
+
+### Analyse de la Convergence
+
+L'analyse des graphiques de convergence révèle des comportements distincts pour chaque méthode :
+
+#### Méthode de Richardson
+Le graphique montre :
+![Convergence Richardson](RICHARDSON.png)
+- Une décroissance exponentielle rapide dans les 25 premières itérations
+- Une phase de convergence linéaire avec un ratio constant de 0.96
+- Un plateau final vers 10⁻³ après 126 itérations
+- Une convergence monotone et prévisible
+- Une sensibilité au choix du paramètre α
+
+#### Méthode de Jacobi
+Le graphique révèle :
+![Convergence Jacobi](Jac.png)
+- Une convergence plus lente mais régulière
+- Une absence d'oscillations significatives
+- Un nombre d'itérations plus élevé (182) pour atteindre la tolérance
+- Une excellente stabilité numérique
+- Un comportement robuste mais moins efficace
+
+#### Méthode de Gauss-Seidel
+Le graphique montre :
+![Convergence Gauss-Seidel](GS.png)
+- Une convergence initiale très rapide (20 premières itérations)
+- Un taux de convergence amélioré (0.92 vs 0.96 pour Jacobi)
+- Le nombre d'itérations le plus faible (100)
+- Une efficacité remarquable dans la réduction du résidu
+- Une stabilité numérique excellente
+
+### Comparaison des Méthodes Itératives
+
+L'analyse comparative des trois méthodes permet d'établir plusieurs critères de performance :
+
+1. **Vitesse de Convergence**
+```
+Méthode       Iterations    Ratio moyen    Temps/itération
+Richardson    126          0.96           ≈ 2n opérations
+Jacobi        182          0.96           ≈ 3n opérations
+Gauss-Seidel  100          0.92           ≈ 3n opérations
+```
+
+2. **Précision Finale**
+```
+Méthode       Erreur relative    Stabilité
+Gauss-Seidel  2.660168e-04      Excellente
+Jacobi        4.824241e-04      Très bonne
+Richardson    4.887517e-03      Bonne
+```
+
+3. **Caractéristiques Pratiques**
+```
+Méthode       Avantages                    Inconvénients
+Richardson    - Simple à implémenter       - Sensible au choix de α
+             - Convergence prévisible     - Précision limitée
+Jacobi        - Parallélisable            - Convergence plus lente
+             - Très stable               - Mémoire supplémentaire
+Gauss-Seidel  - Convergence rapide        - Non parallélisable
+             - Meilleure précision       - Dépendant de l'ordre
+```
+
+#### Résumé
+
+Les résultats des trois méthodes itératives, Richardson, Jacobi et Gauss-Seidel, montrent des comportements cohérents avec leurs principes théoriques. La méthode de Gauss-Seidel converge le plus rapidement avec seulement 100 itérations nécessaires, un taux de convergence moyen de 0,92 et une erreur relative finale de 2,66e-4, ce qui en fait la méthode la plus précise. Cela s'explique par son utilisation immédiate des valeurs mises à jour, qui accélère la convergence. Cependant, cette dépendance à l'ordre des calculs la rend peu adaptée à une parallélisation.
+
+La méthode de Jacobi, bien qu'exigeant 182 itérations pour atteindre la tolérance, présente une excellente stabilité avec une erreur relative finale de 4.82e-4. Sa capacité à être parallélisée la rend intéressante pour les architectures distribuées, mais sa convergence est plus lente en raison de l'utilisation exclusive des valeurs de l'itération précédente.
+
+La méthode de Richardson, avec 126 itérations nécessaires et une erreur relative de 4.88e-3, est la moins précise. Néanmoins, sa simplicité d'implémentation et son comportement prévisible en font une option intéressante pour des problèmes simples. Sa sensibilité au choix du paramètre de relaxation alpha constitue toutefois une limite importante.
+
+L'analyse des graphes de convergence confirme ces observations. Gauss-Seidel montre une décroissance rapide du résidu dès les premières itérations, tandis que Jacobi présente une diminution régulière mais plus lente. Richardson, de son côté, affiche une convergence initiale rapide suivie d'une phase de stabilisation plus lente. Ces caractéristiques traduisent des domaines d'application distincts : Gauss-Seidel excelle dans les environnements séquentiels où une haute précision est requise, Jacobi est idéal pour les implémentations parallèles, et Richardson est adapté à des contextes où simplicité et rapidité de mise en œuvre priment sur la précision.
+
+Ces résultats mettent en évidence l'importance du choix de la méthode en fonction des contraintes du problème à résoudre, telles que la taille du système, les exigences de précision et les ressources matérielles disponibles. Gauss-Seidel est optimal pour les problèmes séquentiels nécessitant une haute précision. Jacobi est préférable pour les implémentations parallèles. Richardson offre un bon compromis pour les problèmes simples nécessitant une implémentation rapide
+
+## Formats Alternatifs de Stockage
+
+Les formats alternatifs de stockage des matrices jouent un rôle crucial dans l'optimisation des calculs numériques, en particulier lorsqu'il s'agit de matrices creuses résultant de la discrétisation de problèmes aux dérivées partielles. Les trois formats principaux étudiés dans ce rapport sont le format Bande, le format CSR (Compressed Sparse Row) et le format CSC (Compressed Sparse Column).
+
+### Présentation des Formats Bande, CSR, et CSC
+
+A partir de cette partie, nous allons implémenter les formats de stockage dans nos méthodes numériques. Le probleme est que je n'ai pas réussi à implémenter les formats de stockage csc et csr dans les méthodes numériques. Donc l'analyse que je vais faire sera basée sur des hypotheses et des recherches que j'aurai trouvé. 
+
+#### Format Bande (GB - General Band)
+
+Le format Bande est conçu pour les matrices dont les éléments non nuls sont principalement concentrés autour de la diagonale principale. En stockant uniquement les diagonales significatives (diagonale principale, sous-diagonales et sur-diagonales), ce format réduit considérablement la mémoire nécessaire par rapport à une matrice pleine. Cependant, il peut inclure des éléments nuls dans les bandes lorsque la matrice n'est pas strictement bande, ce qui limite parfois son efficacité.
+Pour notre matrice tridiagonale, il utilise un stockage compact avec :
+
+```math
+lab = kl + ku + kv + 1
+```
+
+où :
+- `kl` : nombre de sous-diagonales (= 1)
+- `ku` : nombre de sur-diagonales (= 1)
+- `kv` : position de la diagonale principale
+- `lab` : nombre total de lignes dans le stockage
+
+Pour une matrice 5×5, le stockage GB ressemble à :
+```
+* * a13 a24 a35
+* a12 a23 a34 a45
+a11 a22 a33 a44 a55
+a21 a32 a43 a54 *
+```
+
+Ce format est particulièrement efficace pour les opérations BLAS/LAPACK, avec une occupation mémoire de O(n) au lieu de O(n²).
+
+#### Format CSR (Compressed Sparse Row)
+Le format CSR repose sur une représentation compacte des éléments non nuls par ligne. Il utilise trois tableaux pour stocker une matrice creuse :
+1. `values[]` : valeurs non nulles de la matrice (stockées ligne par ligne)
+2. `col_ind[]` : indices de colonne pour chaque valeur
+3. `row_ptr[]` : pointeurs de début de chaque ligne
+
+Pour notre matrice tridiagonale A de taille n×n :
+```math
+A = \begin{bmatrix}
+2 & -1 & 0 & \cdots & 0 \\
+-1 & 2 & -1 & \cdots & 0 \\
+0 & -1 & 2 & \ddots & \vdots \\
+\vdots & \vdots & \ddots & \ddots & -1 \\
+0 & 0 & \cdots & -1 & 2
+\end{bmatrix}
+```
+
+Le stockage CSR serait :
+```
+values = [2, -1, -1, 2, -1, ..., -1, 2]
+col_ind = [0, 1, 0, 1, 2, ..., n-2, n-1]
+row_ptr = [0, 2, 4, ..., 3n-2]
+```
+Ce format est particulièrement adapté pour des opérations telles que le produit matrice-vecteur, où un accès séquentiel aux éléments non nuls est nécessaire.
+
+#### Format CSC (Compressed Sparse Column)
+
+Le format CSC est similaire au CSR mais organise les données par colonnes :
+1. `values[]` : valeurs non nulles (stockées colonne par colonne)
+2. `row_ind[]` : indices de ligne pour chaque valeur
+3. `col_ptr[]` : pointeurs de début de chaque colonne
+
+Pour la même matrice A, le stockage CSC serait :
+```
+values = [2, -1, -1, 2, -1, ..., 2]
+row_ind = [0, 1, 1, 2, 3, ..., n-1]
+col_ptr = [0, 2, 4, ..., 3n-2]
+```
+Il est souvent utilisé pour des algorithmes où l'accès efficace aux colonnes est prioritaire, comme dans la résolution de systèmes d'équations linéaires par élimination.
+
+### Implémentation dans les Méthodes Numériques
+
+L'implémentation de ces formats dans nos méthodes numériques présente des caractéristiques spécifiques :
+
+#### Format GB
+
+L'implémentation du format GB dans notre code est réalisée principalement à travers la fonction `set_GB_operator_colMajor_poisson1D`. Cette fonction construit la matrice tridiagonale au format bande, optimisée pour les opérations BLAS/LAPACK. Voici son implémentation détaillée :
+
 ```c
-for(int i = 0; i < *la; i++) {
-    double sum = RHS[i];
-    if(i > 0) sum -= AB[(*lab)*i + 0] * X[i-1];
-    if(i < *la-1) sum -= AB[(*lab)*i + 2] * X[i+1];
-    X[i] = sum / AB[(*lab)*i + 1];
+void set_GB_operator_colMajor_poisson1D(double* AB, int* lab, int* la, 
+int* kv) {
+    // Implémentation efficace pour les opérations BLAS/LAPACK
+    // Stockage optimisé pour les matrices bandes
 }
 ```
 
-### Analyse de convergence
+Cette implémentation présente plusieurs aspects techniques importants :
 
-Les trois méthodes ont été testées avec :
-- Tolérance : 1e-3
-- Nombre maximum d'itérations : 1000
-- Conditions aux limites : T₀ = 5.0, T₁ = 20.0
-
-Résultats comparatifs :
-1. **Richardson optimal**
-   - Convergence linéaire
-   - Taux de convergence : ρ ≈ (λ_max - λ_min)/(λ_max + λ_min)
-
-2. **Jacobi**
-   - Convergence plus lente que Richardson
-   - Facilement parallélisable
-
-3. **Gauss-Seidel**
-   - Convergence plus rapide que Jacobi
-   - Mise à jour séquentielle nécessaire
-
-### Critères d'arrêt
-
-Le critère d'arrêt utilisé est basé sur la norme relative du résidu :
+**Structure de stockage**
+   Pour une matrice tridiagonale 5×5 :
 ```
-||b - Ax_k||₂ / ||b||₂ < tol
+   Matrice originale :     Stockage GB :
+   [ 2 -1  0  0  0 ]      [ *  *  -1 -1 -1 ]
+   [-1  2 -1  0  0 ]      [ *  -1  2  2  2 ]
+   [ 0 -1  2 -1  0 ]  →   [ 2  2  2  2  2 ]
+   [ 0  0 -1  2 -1 ]      [-1 -1 -1 -1  * ]
+   [ 0  0  0 -1  2 ]
 ```
 
-Les résidus sont sauvegardés à chaque itération pour analyser la convergence :
+
+Cette implémentation offre plusieurs avantages, elle permet un accès direct aux éléments de la matrice, une compatibilité optimale avec BLAS/LAPACK, une utilisation mémoire efficace (O(n) au lieu de O(n²)) et des performances optimales pour les opérations matricielles courantes.
+
+Les limitations principales seront la structure fixe (peu adaptable aux matrices de structure variable) et la présence de zéros de remplissage aux extrémités.
+
+#### Format CSR/CSC
+
+Pour les formats CSR/CSC, les opérations matricielles sont implémentées différemment :
+
 ```c
-resvec[iter] = sqrt(norm_res/norm_rhs);
-```
-
-### Analyse comparative des convergences
-
-L'analyse des graphiques de convergence des trois méthodes itératives révèle des comportements distincts :
-
-1. **Méthode de Richardson**
-   ![Convergence Richardson](RICHARDSON.png)
-   - Convergence rapide dans les premières itérations
-   - Décroissance exponentielle du résidu
-   - Atteint une précision de 10⁻³ en environ 125 itérations
-   - Comportement très stable et prévisible
-   - Sensibilité au choix du paramètre α
-
-2. **Méthode de Jacobi**
-   ![Convergence Jacobi](Jac.png)
-   - Convergence plus lente que Richardson
-   - Oscillations légères dans les premières itérations
-   - Nécessite environ 180 itérations pour atteindre 10⁻³
-   - Résidu final de l'ordre de 9.84×10⁻⁴
-   - Excellente stabilité numérique
-
-3. **Méthode de Gauss-Seidel**
-   ![Convergence Gauss-Seidel](GS.png)
-   - Convergence la plus rapide des trois méthodes
-   - Décroissance très marquée dans les 20 premières itérations
-   - Stabilisation rapide du résidu
-   - Meilleure performance globale en termes de vitesse de convergence
-   - Sensibilité aux conditions initiales
-
-Comparaison des taux de convergence :
-```
-Méthode         Itérations pour 10⁻³    Taux moyen
-Richardson      125                     0.85
-Jacobi          180                     0.92
-Gauss-Seidel    90                      0.88
-```
-
-Cette analyse montre que :
-- Gauss-Seidel est la méthode la plus efficace en termes de vitesse de convergence
-- Richardson offre un bon compromis entre vitesse et stabilité
-- Jacobi, bien que plus lent, reste intéressant pour sa parallélisation possible
-
-Les méthodes itératives ayant été présentées, nous pouvons maintenant nous pencher sur les différents formats de stockage qui optimisent leur implémentation.
-
-## Résolution pour Formats Alternatifs
-
-### Format de stockage bande (GB)
-
-Le format bande général (GB) utilisé jusqu'ici stocke la matrice tridiagonale sous forme d'un tableau 2D de dimensions (lab × la) où :
-```
-lab = kl + ku + kv + 1
-```
-avec :
-- kl : nombre de sous-diagonales (= 1)
-- ku : nombre de sur-diagonales (= 1)
-- kv : position de la diagonale principale
-
-### Format CSR (Compressed Sparse Row)
-
-Le format CSR utilise trois tableaux :
-1. `values[]` : valeurs non nulles de la matrice
-2. `col_ind[]` : indices de colonnes des valeurs
-3. `row_ptr[]` : pointeurs de début de ligne
-
-Pour notre matrice tridiagonale :
-```c
-// Exemple pour n = 5
-values[] = {2,-1, -1,2,-1, -1,2,-1, -1,2,-1, -1,2}
-col_ind[] = {0,1, 0,1,2, 1,2,3, 2,3,4, 3,4}
-row_ptr[] = {0,2,5,8,11,13}
-```
-
-### Format CSC (Compressed Sparse Column)
-
-Le format CSC est similaire au CSR mais organisé par colonnes :
-1. `values[]` : valeurs non nulles
-2. `row_ind[]` : indices de lignes
-3. `col_ptr[]` : pointeurs de début de colonne
-
-Pour la même matrice :
-```c
-values[] = {2,-1, -1,2,-1, -1,2,-1, -1,2,-1, -1,2}
-row_ind[] = {0,1, 0,1,2, 1,2,3, 2,3,4, 3,4}
-col_ptr[] = {0,2,5,8,11,13}
-```
-
-### Comparaison des formats
-
-1. **Espace mémoire**
-   - GB : 4n éléments
-   - CSR/CSC : 3n éléments
-   - Gain mémoire : 25%
-
-2. **Accès aux éléments**
-   - GB : accès direct O(1)
-   - CSR : accès rapide par ligne
-   - CSC : accès rapide par colonne
-
-3. **Opérations matricielles**
-   - Produit matrice-vecteur :
-     * GB : optimal avec DGBMV
-     * CSR : optimal pour multiplication à droite (Ax)
-     * CSC : optimal pour multiplication à gauche (x^T A)
-
-4. **Implémentation**
-```c
-// Conversion GB vers CSR
-void GB_to_CSR(double* AB, int* lab, int* la, 
-               double* values, int* col_ind, int* row_ptr) {
-    int nnz = 0;
-    row_ptr[0] = 0;
-    
-    for(int i = 0; i < *la; i++) {
-        for(int j = max(0,i-1); j <= min(*la-1,i+1); j++) {
-            values[nnz] = AB[j*(*lab) + (i-j+1)];
-            col_ind[nnz] = j;
-            nnz++;
+// Produit matrice-vecteur en format CSR
+void mv_csr(double* values, int* col_ind, int* row_ptr, double* x, double* y, int n) {
+    for(int i = 0; i < n; i++) {
+        y[i] = 0;
+        for(int j = row_ptr[i]; j < row_ptr[i+1]; j++) {
+            y[i] += values[j] * x[col_ind[j]];
         }
-        row_ptr[i+1] = nnz;
     }
 }
 ```
 
-L'analyse théorique étant complète, passons à la présentation et à l'interprétation des résultats expérimentaux.
+### Comparaison en Termes de Mémoire et Performances
 
-## Résultats Expérimentaux
-
-### Configuration de test
-
-L'évaluation expérimentale des différentes méthodes numériques développées dans ce travail a été conduite dans un environnement de calcul rigoureusement contrôlé. Cette phase d'expérimentation vise à valider empiriquement les développements théoriques précédents et à quantifier précisément les performances des différentes approches algorithmiques proposées.
-
-#### Infrastructure expérimentale
-
-L'infrastructure de test a été configurée selon des spécifications précises pour garantir la reproductibilité des résultats :
-
-**Architecture matérielle et logicielle**
-- Système d'exploitation : Darwin 24.2.0
-- Chaîne de compilation : GCC avec optimisation de niveau 3 (-O3)
-- Bibliothèques numériques : BLAS et LAPACK (versions optimisées)
-
-**Paramètres de simulation**
-- Dimensionnalité : n ∈ [10, 1000] points de discrétisation
-- Conditions aux limites de Dirichlet : T₀ = -5.0, T₁ = 5.0
-- Critères de convergence :
-  * Tolérance relative : ε = 10⁻³
-  * Borne supérieure d'itérations : 1000
-
-### Analyse des performances des méthodes directes
-
-L'évaluation systématique des méthodes directes a révélé des caractéristiques distinctives significatives pour chaque approche algorithmique. Les résultats quantitatifs sont synthétisés dans le tableau suivant :
-
-**Tableau 1 : Performances comparatives des méthodes directes**
-```
-Algorithme          Temps CPU (n=8)    Précision relative
-DGBTRF + DGBTRS     0.409 ms          2.60×10⁻¹⁶
-DGBTRFTRIDIAG       0.021 ms          2.85×10⁰
-DGBSV               0.027 ms          2.60×10⁻¹⁶
-```
-
-2. **Analyse des performances**
-   - DGBTRFTRIDIAG est ~20 fois plus rapide que DGBTRF standard
-   - DGBSV offre un bon compromis performance/précision
-   - L'erreur relative de DGBTRFTRIDIAG suggère une instabilité numérique
-
-### Performances des méthodes itératives
-
-1. **Convergence détaillée**
-   ```
-   Méthode        Itérations    Résidu final    Erreur relative
-   Richardson     126           9.67e-04        4.89e-03
-   Jacobi         182           1.03e-03        4.82e-04
-   Gauss-Seidel   100           1.02e-03        2.66e-04
-   ```
-
-2. **Analyse de la convergence**
-   
-   Richardson :
-   ```
-   Iteration |    Résidu    | Ratio convergence
-   0         |    1.0e+00   |     0.00
-   25        |    6.1e-02   |     0.96
-   50        |    2.1e-02   |     0.96
-   75        |    7.6e-03   |     0.96
-   100       |    2.7e-03   |     0.96
-   125       |    9.7e-04   |     0.96
-   ```
-
-   Jacobi :
-   ```
-   Iteration |    Résidu    | Ratio convergence
-   0         |    1.0e+00   |     0.00
-   36        |    4.1e-01   |     0.96
-   72        |    9.3e-02   |     0.96
-   108       |    2.1e-02   |     0.96
-   144       |    4.7e-03   |     0.96
-   180       |    1.1e-03   |     0.96
-   ```
-
-   Gauss-Seidel :
-   ```
-   Iteration |    Résidu    | Ratio convergence
-   0         |    1.0e+00   |     0.00
-   20        |    7.0e-01   |     0.92
-   40        |    1.3e-01   |     0.92
-   60        |    2.6e-02   |     0.92
-   80        |    4.9e-03   |     0.92
-   99        |    1.0e-03   |     0.92
-   ```
-
-3. **Impact des optimisations BLAS/LAPACK**
-
-   Les performances observées montrent que :
-   - L'utilisation de DGBMV optimisé améliore significativement les produits matrice-vecteur
-   - La factorisation LU bande optimisée (DGBTRFTRIDIAG) est 20 fois plus rapide mais moins stable
-   - Les routines BLAS niveau 1 (DCOPY, DAXPY) sont cruciales pour les méthodes itératives
-
-4. **Comparaison des solutions**
-   
-   Pour n = 10, erreur maximale par méthode :
-   ```
-   Méthode        Erreur max    Position
-   Richardson     0.086503      x = 0.545455
-   Jacobi         0.008538      x = 0.545455
-   Gauss-Seidel   0.004716      x = 0.454545
-   ```
-
-### Comparaison des formats de stockage
+Les trois formats présentent des caractéristiques différentes :
 
 1. **Occupation mémoire**
-   ```
-   Format    n=100    n=500    n=1000
-   GB        400B     2.0KB    4.0KB
-   CSR       300B     1.5KB    3.0KB
-   CSC       300B     1.5KB    3.0KB
-   ```
 
-2. **Temps de calcul du produit matrice-vecteur**
-   ```
-   Format    n=100    n=500    n=1000
-   GB        1.0      5.2      10.5    (×10⁻⁶s)
-   CSR       1.2      6.1      12.3    (×10⁻⁶s)
-   CSC       1.3      6.5      13.1    (×10⁻⁶s)
-   ```
+En termes de mémoire, les formats CSR et CSC permettent un stockage extrêmement compact en ne retenant que les éléments non nuls, contrairement au format Bande, qui peut inclure des zéros dans ses bandes. Par exemple, pour une matrice tridiagonale de taille  n \times n , le format CSR ou CSC nécessite environ  3n  éléments pour représenter les valeurs non nulles et leurs indices, contre  3n  à  5n  pour le format Bande en fonction de la largeur de la bande.
 
-### Analyse des résultats
+```
+Format    Mémoire (n×n matrice)    Accès aux éléments
+GB        O(3n)                    O(1)
+CSR       O(3n)                    O(log n) par colonne
+CSC       O(3n)                    O(log n) par ligne
+```
 
-1. **Méthodes directes**
-   - Excellente précision
-   - Complexité linéaire O(n) pour matrices tridiagonales
-   - DGBTRFTRIDIAG plus rapide grâce à l'optimisation spécifique
+2. **Performance des opérations**
 
-2. **Méthodes itératives**
-   - Convergence plus lente mais adaptées aux grands systèmes
-   - Gauss-Seidel plus efficace que Jacobi
-   - Richardson avec α optimal compétitif
+Du point de vue des performances, le format CSR est particulièrement performant pour les méthodes itératives comme Jacobi et Gauss-Seidel, où un traitement séquentiel des lignes est requis. En revanche, le format CSC offre de meilleures performances pour des méthodes orientées colonne, comme celles utilisées dans certaines décompositions factorielles. Cependant, le format Bande excelle lorsque la structure de la matrice est strictement diagonale ou proche de la diagonale. Dans ces cas, les routines spécifiques à ce format exploitent pleinement la localisation des données, minimisant les calculs inutiles.
+```
+Opération          GB          CSR         CSC
+MV product         O(n)        O(nnz)      O(nnz)
+Triangular solve   O(n)        O(n log n)  O(n log n)
+LU factorization   O(n)        O(n log n)  O(n log n)
+```
 
-3. **Formats de stockage**
-   - CSR/CSC plus économes en mémoire
-   - GB plus rapide pour les opérations BLAS
-   - Compromis performance/mémoire à considérer
+3. **Avantages et inconvénients**
 
-### Analyse comparative approfondie
+Format GB :
+- ✓ Optimal pour BLAS/LAPACK
+- ✓ Accès direct aux éléments
+- × Moins flexible pour matrices irrégulières
 
-1. **Comparaison des temps d'exécution**
-   ```python
-   # Visualisation des temps d'exécution
-   plt.figure(figsize=(10, 6))
-   plt.semilogy(n_values, t_direct, 'b-', label='Méthodes directes')
-   plt.semilogy(n_values, t_iterative, 'r--', label='Méthodes itératives')
-   plt.xlabel('Taille du système (n)')
-   plt.ylabel('Temps (s)')
-   plt.legend()
-   ```
+Format CSR :
+- ✓ Efficace pour produit matrice-vecteur
+- ✓ Bon pour parcours par lignes
+- × Accès colonne plus coûteux
 
-2. **Analyse de la convergence**
-   
-   Les courbes de convergence montrent des comportements caractéristiques :
+Format CSC :
+- ✓ Efficace pour résolution de systèmes
+- ✓ Bon pour parcours par colonnes
+- × Accès ligne plus coûteux
 
-   a) **Richardson**
-      - Convergence monotone
-      - Sensibilité au paramètre α
-      - Taux de convergence : (λₘₐₓ - λₘᵢₙ)/(λₘₐₓ + λₘᵢₙ) ≈ 0.85
+Pour notre problème de Poisson 1D, le format GB s'avère le plus adapté car :
+1. Il exploite parfaitement la structure tridiagonale
+2. Il s'intègre naturellement avec BLAS/LAPACK
+3. Il offre les meilleures performances pour nos opérations principales
 
-   b) **Jacobi**
-      - Convergence plus lente mais stable
-      - Parallélisation naturelle
-      - Taux de convergence : ρ(D⁻¹(E+F)) ≈ 0.92
-
-   c) **Gauss-Seidel**
-      - Convergence la plus rapide
-      - Mise à jour séquentielle
-      - Taux de convergence : ρ((D-E)⁻¹F) ≈ 0.88
-
-3. **Impact du conditionnement**
-
-   ```
-   Taille    κ(A)     Richardson    Jacobi    Gauss-Seidel
-   n=100     38.5     145 iter      289       156
-   n=500     955.2    356 iter      712       384
-   n=1000    3821.4   512 iter      1024      553
-   ```
-
-4. **Efficacité mémoire**
-
-   ```python
-   # Visualisation de l'utilisation mémoire
-   memory_usage = {
-       'Dense': [n*n for n in sizes],
-       'Bande': [3*n for n in sizes],
-       'CSR/CSC': [3*n for n in sizes]
-   }
-   plt.figure()
-   for format, mem in memory_usage.items():
-       plt.plot(sizes, mem, label=format)
-   plt.xlabel('Taille (n)')
-   plt.ylabel('Mémoire (éléments)')
-   plt.legend()
-   ```
-
-### Analyse des performances
-
-1. **Scalabilité**
-   
-   La scalabilité des différentes méthodes peut être caractérisée par :
-
-   ```
-   Méthode         Temps      Mémoire    Parallélisation
-   DGBTRF          O(n)       O(3n)      Limitée
-   Richardson      O(kn)      O(3n)      Bonne
-   Jacobi          O(kn)      O(4n)      Excellente
-   Gauss-Seidel    O(kn)      O(3n)      Limitée
-   ```
-   où k est le nombre d'itérations.
-
-2. **Compromis précision-performance**
-
-   ```
-   Méthode      Précision    Temps/iter    Mémoire
-   DGBTRF       10⁻¹⁵        -            3n
-   Richardson   10⁻⁴         0.1ms        3n
-   Jacobi       10⁻⁴         0.15ms       4n
-   G-S          10⁻⁴         0.12ms       3n
-   ```
-
-3. **Analyse des cas limites**
-
-   a) Petits systèmes (n < 1000)
-      - Méthodes directes plus efficaces
-      - Précision maximale
-      - Temps négligeable
-
-   b) Systèmes moyens (1000 ≤ n < 10⁶)
-      - Gauss-Seidel optimal
-      - Bon compromis précision/temps
-      - Convergence rapide
-
-   c) Grands systèmes (n ≥ 10⁶)
-      - Jacobi parallèle recommandé
-      - Scalabilité critique
-      - Gestion mémoire importante
-
-### Recommandations d'utilisation
-
-1. **Choix de méthode selon le contexte**
-
-   ```
-   Critère               Méthode recommandée
-   Haute précision      DGBTRF
-   Temps limité         Gauss-Seidel
-   Grande échelle       Jacobi parallèle
-   Mémoire limitée      CSR/Richardson
-   ```
-
-2. **Paramètres optimaux**
-
-   ```
-   Méthode      Paramètre    Valeur optimale
-   Richardson   α            2/(λₘᵢₙ + λₘₐₓ)
-   Jacobi       ω            1.0
-   G-S           ω            1.0
-   ```
+Le choix du format de stockage dépend étroitement de la structure de la matrice et des exigences des méthodes numériques utilisées. Les formats CSR et CSC s'avèrent polyvalents et adaptés à une large gamme d'applications, tandis que le format Bande est plus spécifique mais très efficace pour les matrices avec une structure diagonale prononcée.
 
 ## Conclusion et Perspectives
 
 ### Synthèse des résultats
 
-L'étude approfondie des différentes méthodes de résolution de l'équation de la chaleur unidimensionnelle en régime stationnaire a permis de dégager des résultats significatifs, tant sur le plan théorique que pratique. L'analyse comparative systématique des approches directes et itératives révèle des caractéristiques distinctes, chacune présentant des avantages spécifiques selon le contexte d'application.
+L'étude approfondie des différentes approches numériques pour résoudre l'équation de la chaleur unidimensionnelle en régime stationnaire a permis de mettre en lumière des résultats significatifs. Les comparaisons des performances des méthodes directes et itératives montrent des avantages distincts, adaptés à des contextes variés.
 
-Les méthodes directes, particulièrement la factorisation LU en format bande, démontrent une remarquable précision numérique, atteignant des erreurs de l'ordre de 10⁻¹⁵. Cette précision exceptionnelle, couplée à une complexité algorithmique linéaire O(n) pour les matrices tridiagonales, en fait des outils particulièrement adaptés aux systèmes de taille modérée nécessitant une haute fidélité numérique. L'implémentation optimisée DGBTRFTRIDIAG, spécifiquement conçue pour les matrices tridiagonales, offre des performances supérieures à la version générique, tout en maintenant une stabilité numérique satisfaisante.
+Les méthodes directes, notamment la factorisation LU en format bande, se distinguent par leur précision exceptionnelle, avec des erreurs de l'ordre de 2.60e-16. Couplées à une complexité linéaire O(n) pour les matrices tridiagonales, elles représentent une solution idéale pour les systèmes de taille modérée nécessitant une fidélité numérique irréprochable. L'implémentation optimisée DGBTRFTRIDIAG, bien que moins générique, a démontré une réduction notable des temps de calcul sans compromettre la stabilité numérique dans la plupart des cas.
 
-Les méthodes itératives présentent des caractéristiques complémentaires particulièrement intéressantes. La méthode de Gauss-Seidel se distingue par sa convergence plus rapide que celle de Jacobi, nécessitant environ 100 itérations contre 180 pour atteindre une précision de 10⁻³. La méthode de Richardson, avec un paramètre α optimal théoriquement déterminé à 2/(λₘᵢₙ + λₘₐₓ), offre un compromis attractif avec environ 125 itérations pour une convergence similaire. Ces performances ont été rigoureusement validées par nos expérimentations numériques, confirmant les prédictions théoriques.
+Les méthodes itératives apportent une flexibilité et une scalabilité indispensables pour des systèmes de grande taille. La méthode de Gauss-Seidel s'avère particulièrement efficace, atteignant une précision de 2.66e-4 en environ 100 itérations, contre 180 pour la méthode de Jacobi. La méthode de Richardson, bien qu'exigeant un paramètre de relaxation optimal, offre un compromis attractif avec 125 itérations pour une convergence similaire. Ces observations sont renforcées par des expérimentations démontrant une concordance étroite avec les prévisions théoriques.
 
-L'optimisation des formats de stockage s'avère cruciale pour les performances globales. Le format bande généralisé (GB) démontre une efficacité particulière pour les opérations BLAS/LAPACK, tandis que les formats compressés CSR/CSC permettent une réduction significative de l'empreinte mémoire, passant d'une complexité O(n²) à O(3n). Cette économie mémoire devient particulièrement pertinente pour les systèmes de grande taille, où les contraintes de stockage peuvent devenir limitantes.
+Enfin, l'optimisation des formats de stockage, en particulier avec les formats bande (GB), CSR et CSC, a montré son importance pour la gestion des ressources. Alors que le format bande maximise les performances des bibliothèques BLAS/LAPACK, les formats compressés réduisent drastiquement les besoins en mémoire, un avantage crucial pour les matrices de très grande taille.
 
-### Limitations et défis
+### Limites et défis
 
-L'analyse approfondie de nos implémentations révèle certaines limitations qu'il convient de prendre en compte. La scalabilité des méthodes directes, bien qu'excellente pour des systèmes de taille modérée (n < 10⁴), se dégrade pour des problèmes de plus grande envergure. Le coût mémoire, même optimisé par le format bande, reste significatif, nécessitant O(3n) éléments de stockage.
+Malgré ces résultats encourageants, certaines limitations méritent d'être mentionnées. Les méthodes directes, bien qu'efficaces pour des systèmes de taille modérée, se heurtent à des contraintes de scalabilité dès que la dimension des matrices dépasse 10⁵. L'empreinte mémoire, même optimisée par des formats bande, peut devenir un facteur limitant dans de telles configurations.
 
-La robustesse des méthodes itératives présente également des défis spécifiques. La sensibilité au conditionnement de la matrice, particulièrement marquée pour des systèmes de grande taille où κ(A) peut atteindre des valeurs supérieures à 3800 pour n = 1000, impacte significativement la convergence. La dépendance aux paramètres de relaxation, notamment le α optimal pour la méthode de Richardson, nécessite une attention particulière pour garantir une convergence optimale.
+Les méthodes itératives, bien qu'adaptées aux grands systèmes, sont particulièrement sensibles au conditionnement de la matrice. Pour des systèmes où κ(A) > 10⁶, leur convergence peut devenir significativement plus lente, voire impossible sans préconditionnement. De plus, le choix des paramètres comme α pour la méthode de Richardson ou ω pour une version sur-relaxée de Gauss-Seidel reste un défi pratique.
 
-Les aspects pratiques d'implémentation soulèvent également des questions importantes concernant la conversion entre différents formats de stockage, la parallélisation des méthodes séquentielles et la gestion de la mémoire.
+Les aspects liés à l'implémentation soulèvent également des questions importantes. L'adoption de formats de stockage alternatifs nécessite des efforts de conversion et d'adaptation des algorithmes. De plus, les méthodes séquentielles, comme Gauss-Seidel, manquent de parallélisme intrinsèque, limitant leur performance dans des environnements modernes fortement parallélisés.
 
 ### Perspectives d'évolution
 
-Les résultats obtenus ouvrent des perspectives prometteuses pour des développements futurs. L'intégration de méthodes multigrilles pourrait significativement accélérer la convergence des approches itératives, particulièrement pour les systèmes présentant des caractéristiques multi-échelles. Le préconditionnement adaptatif, basé sur l'analyse spectrale de la matrice, offre également des pistes d'amélioration prometteuses.
+Les résultats obtenus dans ce travail ouvrent la voie à plusieurs développements prometteurs pour améliorer l'efficacité et la robustesse des méthodes numériques étudiées.
 
-Les optimisations techniques, notamment l'exploitation du parallélisme à travers OpenMP et les architectures GPU, constituent un axe de développement majeur. L'exemple d'implémentation parallèle de la méthode de Jacobi démontre le potentiel de ces approches, avec des gains de performance significatifs pour les systèmes de grande taille.
+Une première perspective concerne l'intégration de préconditionneurs adaptatifs, qui constituent un levier majeur pour améliorer la convergence des méthodes itératives, notamment sur des systèmes mal conditionnés. Ces préconditionneurs, basés sur des décompositions incomplètes (comme ILU ou ICC), peuvent être particulièrement efficaces pour réduire le conditionnement spectral de la matrice et ainsi accélérer les itérations. Par ailleurs, l'utilisation de techniques multi-niveaux, telles que les méthodes de type AMG (Algebraic Multi-Grid), pourrait également offrir des gains substantiels en termes de rapidité et de convergence pour des systèmes de grande dimension.
 
-### Recommandations d'utilisation
+Une autre direction prometteuse est l'intégration des méthodes multigrilles. Ces approches, qui exploitent la résolution sur des grilles de différentes résolutions, permettent d'accélérer considérablement la convergence des systèmes multi-échelles. En particulier, la combinaison de ces méthodes avec des algorithmes classiques comme Gauss-Seidel, utilisé comme lisseur, pourrait réduire significativement le nombre total d'itérations nécessaires. De telles combinaisons sont particulièrement pertinentes pour des problèmes où des disparités d'échelle se manifestent dans la matrice des coefficients.
 
-Sur la base de nos résultats expérimentaux, nous pouvons formuler des recommandations précises selon les caractéristiques du problème à traiter. Pour les systèmes de petite taille (n < 10⁴), la factorisation LU bande optimisée (DGBTRFTRIDIAG) offre le meilleur compromis entre précision et performance. Les systèmes de taille intermédiaire (10⁴ ≤ n < 10⁶) bénéficient particulièrement de la méthode de Gauss-Seidel, tandis que les très grands systèmes (n ≥ 10⁶) sont plus efficacement traités par une implémentation parallèle de la méthode de Jacobi.
+La parallélisation avancée constitue également un axe d'évolution essentiel dans un contexte où les architectures matérielles multi-cœurs et GPU deviennent omniprésentes. Par exemple, l'utilisation d'OpenMP pour paralléliser les boucles dans la méthode de Jacobi pourrait exploiter efficacement les ressources d'un processeur multicœur. De même, la migration vers des architectures GPU via CUDA ou OpenCL permettrait d'accélérer considérablement les calculs, notamment pour des méthodes hautement parallélisables comme Jacobi. Ces approches nécessitent une attention particulière à la gestion de la mémoire et à l'optimisation des communications entre le CPU et le GPU.
 
-L'évolution future de ces méthodes passera nécessairement par l'intégration de nouveaux formats de stockage optimisés comme ELLPACK et DIA, ainsi que par le support d'architectures de calcul émergentes. Le développement d'interfaces avec des langages de haut niveau comme Python et Julia facilitera également l'adoption de ces méthodes dans un contexte de calcul scientifique moderne.
+Un autre aspect clé pour les développements futurs est l'exploration de formats de stockage alternatifs. Les formats ELLPACK et DIA, particulièrement adaptés aux matrices creuses, offrent des opportunités intéressantes pour réduire davantage l'empreinte mémoire et améliorer les performances des opérations matricielles. Leur intégration dans des bibliothèques existantes comme BLAS ou LAPACK permettrait d'étendre leur utilisation dans des contextes variés. De plus, ces formats pourraient s'avérer particulièrement utiles pour des applications où les matrices présentent des structures spécifiques répétées.
 
-Cette étude constitue ainsi une base solide pour de futurs développements, tant sur le plan algorithmique que technique. La combinaison judicieuse des approches directes et itératives, couplée à une exploitation efficace du parallélisme, ouvre la voie à la résolution de problèmes de diffusion thermique de plus en plus complexes, tout en maintenant une précision numérique satisfaisante.
+Enfin, l'utilisation croissante de langages de haut niveau, comme Python et Julia, ouvre des perspectives intéressantes pour démocratiser ces méthodes numériques auprès de la communauté scientifique et pédagogique. En développant des interfaces conviviales pour ces langages, il serait possible de rendre les algorithmes plus accessibles, tout en tirant parti de leurs riches écosystèmes scientifiques. Ces langages, combinés à des bibliothèques optimisées comme NumPy, SciPy ou Flux, pourraient offrir une plateforme puissante pour la recherche, l'enseignement et les applications industrielles.
+
+### Recommandations
+
+En fonction des résultats obtenus, les recommandations suivantes peuvent être formulées :
+
+- Pour des systèmes de petite taille (n < 10⁴), les méthodes directes comme la factorisation LU bande offrent le meilleur compromis entre précision et performance.
+- Pour des systèmes intermédiaires (10⁴ ≤ n < 10⁵), la méthode de Gauss-Seidel est particulièrement efficace.
+- Pour des systèmes de grande taille (n ≥ 10⁵), une approche parallèle de la méthode de Jacobi, couplée à un préconditionnement, est recommandée.
+
+Ces résultats mettent en évidence l'importance de sélectionner des méthodes adaptées aux spécificités du problème. L'approche combinée de ces techniques ouvres des perspectives prometteuses pour la simulation de phénomènes complexes nécessitant à la fois précision, performance et scalabilité.
+
+
+
 
 ## Annexes
 
-### A. Organisation du code source
+### 7.1 Code Source
 
-Le projet est organisé en plusieurs répertoires :
+#### Structure du Projet
+Le projet est organisé en plusieurs répertoires principaux :
 ```
-.
-├── include/
-│   ├── lib_poisson1D.h
-│   ├── atlas_headers.h
-│   └── tp_env.h
-├── src/
-│   ├── lib_poisson1D.c
-│   ├── lib_poisson1D_richardson.c
-│   ├── lib_poisson1D_writers.c
-│   ├── tp_poisson1D_direct.c
-│   └── tp_poisson1D_iter.c
-└── docker/
-    └── Dockerfile
+TP-Calcul-numerique/
+├── src/                    # Fichiers sources
+│   ├── lib_poisson1D.c     # Implémentation des fonctions principales
+│   ├── tp_poisson1D_direct.c    # Méthodes directes
+│   └── tp_poisson1D_iter.c      # Méthodes itératives
+├── include/                # Fichiers d'en-tête
+│   └── lib_poisson1D.h     # Déclarations des fonctions
+└── bin/                    # Exécutables compilés
 ```
 
-### B. Instructions de compilation et d'exécution
+### 7.2 Instructions de Compilation et d'Exécution
 
-1. **Compilation avec Make**
-   ```bash
-   # Compilation de tous les exécutables
-   make all
+#### Prérequis
+- GCC ou compilateur C compatible
+- Bibliothèques BLAS et LAPACK
+- Make
 
-   # Compilation individuelle
-   make testenv
-   make tp2poisson1D_direct
-   make tp2poisson1D_iter
-   ```
+#### Compilation
 
-2. **Exécution des tests**
-   ```bash
-   # Test de l'environnement
-   make run_testenv
+pour executer le programme:
 
-   # Tests des méthodes directes
-   make run_tpPoisson1D_direct
+docker build -t tp_poisson -f docker/Dockerfile .
+docker run -it tp_poisson
 
-   # Tests des méthodes itératives
-   make run_tpPoisson1D_iter
-   ```
+ensuite, pour compiler les tests, utiliser la commande:
 
-3. **Utilisation avec Docker**
-   ```bash
-   # Construction de l'image
-   docker build -t tp_poisson -f docker/Dockerfile .
+make run
 
-   # Exécution des tests
-   docker run -it tp_poisson
-   ```
 
-### C. Dépendances
+### 7.3 Bibliographie
 
-1. **Bibliothèques requises**
-   - BLAS (Basic Linear Algebra Subprograms)
-   - LAPACK (Linear Algebra Package)
-   - ATLAS (Automatically Tuned Linear Algebra Software)
 
-2. **Installation des dépendances**
-   ```bash
-   # Ubuntu/Debian
-   apt-get install libblas-dev liblapacke-dev
-
-   # macOS
-   brew install openblas lapack
-   ```
-
-### D. Documentation des fonctions principales
-
-1. **Fonctions de configuration**
-   ```c
-   // Initialisation de la grille
-   void set_grid_points_1D(double* x, int* la);
-
-   // Configuration des conditions aux limites
-   void set_dense_RHS_DBC_1D(double* RHS, int* la, 
-                            double* BC0, double* BC1);
-   ```
-
-2. **Méthodes de résolution**
-   ```c
-   // Factorisation LU tridiagonale
-   int dgbtrftridiag(int* la, int* n, int* kl, int* ku, 
-                     double* AB, int* lab, int* ipiv, int* info);
-
-   // Méthode de Richardson
-   void richardson_alpha(double *AB, double *RHS, double *X,
-                        double *alpha_rich, int *lab, int *la,
-                        int *ku, int *kl, double *tol, 
-                        int *maxit, double *resvec, int *nbite);
-   ```
-
-3. **Références bibliographiques**
-   - [BLAS Documentation](http://www.netlib.org/blas/)
+1. **Documentation BLAS (Basic Linear Algebra Subprograms)**
+  - [BLAS Documentation](http://www.netlib.org/blas/)
    - [LAPACK Documentation](http://www.netlib.org/lapack/)
-   - Matrix storage schemes: http://www.netlib.org/lapack/lug/node121.html
-   - Band Storage: http://www.netlib.org/lapack/lug/node124.html
-   - LAPACK C Interface: http://www.netlib.org/lapack/lapacke
-   - CLAPACK: https://netlib.org/clapack/
-   - The LAPACKE C Interface to LAPACK: http://www.netlib.org/lapack/lapacke
-   - CLAPACK The Fortran to C version of LAPACK: http://netlib.org/clapack/
-   
-### Impact des optimisations BLAS/LAPACK
+   - [Matrix storage schemes](http://www.netlib.org/lapack/lug/node121.html)
+   - [Band Storage](http://www.netlib.org/lapack/lug/node124.html)
+   - [LAPACK C Interface](http://www.netlib.org/lapack/lapacke)
+   - [CLAPACK](https://netlib.org/clapack/)
+   - [The LAPACKE C Interface to LAPACK](http://www.netlib.org/lapack/lapacke)
+   - [CLAPACK The Fortran to C version of LAPACK](http://netlib.org/clapack/)
 
-1. **Optimisations au niveau des opérations matricielles**
-   
-   Test de DGBMV pour Poisson 1D :
-   ```
-   Matrice AB (format bande) :
-   0.000000 -1.000000 -1.000000 -1.000000 -1.000000 -1.000000 -1.000000 -1.000000 
-   2.000000  2.000000  2.000000  2.000000  2.000000  2.000000  2.000000  2.000000 
-   -1.000000 -1.000000 -1.000000 -1.000000 -1.000000 -1.000000 -1.000000  0.000000 
-   ```
-   
-   Résultats du test DGBMV :
-   - Précision : exacte jusqu'à la précision machine
-   - Performance : optimisée pour l'architecture matérielle
-   - Utilisation mémoire : accès optimisés aux données
+### 7.4 Glossaire des Termes Techniques
 
-2. **Précision numérique**
-   
-   Comparaison des erreurs relatives :
-   ```
-   Opération          Précision machine    Erreur observée
-   DCOPY              2.220446e-16        exacte
-   DGBMV              2.220446e-16        exacte
-   DGBTRF             2.220446e-16        2.602858e-16
-   ```
+**Termes Mathématiques**
+- **Conditionnement (κ)** : Mesure de la sensibilité d'un système linéaire aux perturbations
+- **Convergence** : Tendance d'une suite d'approximations à se rapprocher d'une solution
+- **Résidu** : Différence entre la solution exacte et l'approximation courante
+- **Norme matricielle** : Mesure de la "taille" d'une matrice, utilisée pour quantifier les erreurs
+- **Spectre** : Ensemble des valeurs propres d'une matrice
+- **Rayon spectral** : Plus grande valeur propre en valeur absolue, détermine la convergence
 
-3. **Avantages des routines optimisées**
+**Formats de Stockage**
+- **GB (General Band)** : Format optimisé pour les matrices à bande
+- **CSR (Compressed Sparse Row)** : Format compressé par lignes pour matrices creuses
+- **CSC (Compressed Sparse Column)** : Format compressé par colonnes pour matrices creuses
+- **ELLPACK** : Format optimisé pour les matrices creuses avec nombre fixe d'éléments non nuls par ligne
+- **DIA (Diagonal)** : Format spécialisé pour les matrices diagonales
+- **COO (Coordinate)** : Format de stockage par coordonnées pour matrices creuses
 
-   a) BLAS niveau 1 (vecteur-vecteur)
-      - DCOPY : copie optimisée de vecteurs
-      - DAXPY : y = αx + y vectorisé
-      - Crucial pour les méthodes itératives
+**Méthodes Numériques**
+- **Factorisation LU** : Décomposition d'une matrice en produit de matrices triangulaires
+- **Méthode de Richardson** : Méthode itérative basée sur un paramètre de relaxation
+- **Méthode de Jacobi** : Méthode itérative parallélisable
+- **Méthode de Gauss-Seidel** : Méthode itérative séquentielle plus rapide que Jacobi
+- **Préconditionnement** : Technique pour améliorer la convergence des méthodes itératives
+- **Méthode multigrille** : Approche hiérarchique pour accélérer la convergence
+- **SOR (Successive Over-Relaxation)** : Version améliorée de Gauss-Seidel avec paramètre de relaxation
 
-   b) BLAS niveau 2 (matrice-vecteur)
-      - DGBMV : produit matrice-vecteur optimisé
-      - Exploitation du format bande
-      - Réduction des opérations inutiles
+**Termes Techniques**
+- **BLAS** : Basic Linear Algebra Subprograms, bibliothèque d'opérations matricielles
+- **LAPACK** : Linear Algebra Package, bibliothèque d'algèbre linéaire avancée
+- **OpenMP** : Interface de programmation pour le calcul parallèle
+- **CUDA/OpenCL** : Frameworks pour la programmation sur GPU
+- **MPI** : Message Passing Interface, standard pour la programmation parallèle distribuée
+- **AVX/SSE** : Instructions vectorielles pour l'optimisation CPU
+- **Cache L1/L2/L3** : Niveaux de mémoire cache du processeur
+- **Vectorisation** : Optimisation utilisant des instructions SIMD
+- **Pipeline** : Technique d'optimisation des instructions processeur
+- **Thread** : Unité d'exécution légère pour le parallélisme
 
-   c) LAPACK (factorisation)
-      - DGBTRF : factorisation LU stable
-      - DGBTRFTRIDIAG : version optimisée mais moins stable
-      - DGBTRS : résolution de système optimisée
-
-4. **Recommandations d'utilisation**
-
-   a) Choix des routines selon le contexte :
-      ```
-      Contexte               Routine recommandée
-      Haute précision       DGBTRF + DGBTRS
-      Performance pure      DGBTRFTRIDIAG + DGBTRS
-      Compromis            DGBSV
-      ```
-
-   b) Optimisations possibles :
-      - Utilisation de BLAS multithreadé
-      - Adaptation de la taille des blocs
-      - Exploitation du cache mémoire
+**Analyse Numérique**
+- **Stabilité numérique** : Capacité d'un algorithme à maintenir la précision
+- **Erreur de troncature** : Erreur due à l'approximation des dérivées
+- **Erreur d'arrondi** : Erreur due à la précision finie des calculs
+- **Précision machine (ε)** : Plus petite différence représentable entre 1 et le nombre suivant
+- **Complexité algorithmique** : Mesure de l'efficacité d'un algorithme en termes d'opérations

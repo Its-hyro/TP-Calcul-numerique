@@ -3,18 +3,19 @@
 /* This file contains the main function   */
 /* to solve the Poisson 1D problem        */
 /******************************************/
+
+
 #include "lib_poisson1D.h"
 #include <time.h>
 
 #define TRF 0
 #define TRI 1
 #define SV 2
-#define DGBMV_TEST 3  // Nouveau mode pour le test DGBMV
-#define LU_TEST 4  // Nouveau mode pour tester la factorisation LU
+#define DGBMV_TEST 3  
+#define LU_TEST 4  
 
 int main(int argc,char *argv[])
-/* ** argc: Nombre d'arguments */
-/* ** argv: Valeur des arguments */
+
 {
   int ierr;
   int jj;
@@ -28,7 +29,7 @@ int main(int argc,char *argv[])
   double *RHS, *EX_SOL, *X;
   double **AAB;
   double *AB;
-  double *X_TEST; // Pour le test DGBMV
+  double *X_TEST; 
 
   double relres;
 
@@ -38,7 +39,7 @@ int main(int argc,char *argv[])
     perror("Application takes at most one argument");
     exit(1);
   }
-
+  
   NRHS=1;
   nbpoints=10;
   la=nbpoints-2;
@@ -49,11 +50,13 @@ int main(int argc,char *argv[])
   RHS=(double *) malloc(sizeof(double)*la);
   EX_SOL=(double *) malloc(sizeof(double)*la);
   X=(double *) malloc(sizeof(double)*la);
-  X_TEST=(double *) malloc(sizeof(double)*la); // Pour le test DGBMV
+  X_TEST=(double *) malloc(sizeof(double)*la); 
 
-  // TODO : you have to implement those functions
+  // Set the grid points  
   set_grid_points_1D(X, &la);
+  // Set the dense RHS
   set_dense_RHS_DBC_1D(RHS,&la,&T0,&T1);
+  // Set the analytical solution
   set_analytical_solution_DBC_1D(EX_SOL, X, &la, &T0, &T1);
   
   write_vec(RHS, &la, "RHS.dat");
@@ -65,11 +68,14 @@ int main(int argc,char *argv[])
   kl=1;
   lab=kv+kl+ku+1;
 
+  // Allocation de la matrice AB
   AB = (double *) malloc(sizeof(double)*lab*la);
 
+  // Set the GB operator
   set_GB_operator_colMajor_poisson1D(AB, &lab, &la, &kv);
   write_GB_operator_colMajor_poisson1D(AB, &lab, &la, "AB.dat");
-
+  
+  // Test de la fonction dgbmv
   if (IMPLEM == DGBMV_TEST) {
     printf("\nTest de la fonction dgbmv pour Poisson 1D\n");
     
@@ -97,9 +103,9 @@ int main(int argc,char *argv[])
     // Affichage des résultats
     printf("\nRésultats :\n");
     for(int i = 0; i < la; i++) {
-      double expected = 2.0 * RHS[i];  // Diagonale
-      if(i > 0) expected -= RHS[i-1];  // Sous-diagonale
-      if(i < la-1) expected -= RHS[i+1];  // Sur-diagonale
+      double expected = 2.0 * RHS[i]; 
+      if(i > 0) expected -= RHS[i-1];  
+      if(i < la-1) expected -= RHS[i+1];  
       printf("X_TEST[%d] = %f (attendu : %f)\n", i, X_TEST[i], expected);
     }
     
@@ -120,7 +126,7 @@ int main(int argc,char *argv[])
     } else {
       printf("\nTest dgbmv_poisson1D : ÉCHEC\n");
     }
-    
+    // Sauvegarde de la solution
     write_vec(X_TEST, &la, "DGBMV_TEST.dat");
   } else if (IMPLEM == LU_TEST) {
     printf("\nTest de la factorisation LU pour matrice tridiagonale\n");
@@ -168,7 +174,7 @@ int main(int argc,char *argv[])
       cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
       printf("\nTemps d'exécution (DGBSV) : %f secondes\n", cpu_time_used);
     }
-
+    // Sauvegarde de la solution
     write_GB_operator_colMajor_poisson1D(AB, &lab, &la, "LU.dat");
     write_xy(RHS, X, &la, "SOL.dat");
 
@@ -177,7 +183,7 @@ int main(int argc,char *argv[])
     
     printf("\nThe relative forward error is relres = %e\n",relres);
   }
-
+  // Libération des allocations
   free(RHS);
   free(EX_SOL);
   free(X);

@@ -45,12 +45,11 @@ void set_GB_operator_colMajor_poisson1D_DGBMV(double* AB, int *lab, int *la, int
     AB[ii] = 0.0;
   }
   
-  // Format pour DGBMV
   for (jj=0;jj<(*la);jj++){
     kk = jj*(*lab);
-    if (jj > 0) AB[kk+0]=-1.0;      // sous-diagonale
-    AB[kk+1]=2.0;                    // diagonale
-    if (jj < (*la)-1) AB[kk+2]=-1.0; // sur-diagonale
+    if (jj > 0) AB[kk+0]=-1.0;      
+    AB[kk+1]=2.0;                  
+    if (jj < (*la)-1) AB[kk+2]=-1.0; 
   }
 }
 
@@ -126,7 +125,7 @@ int dgbtrftridiag(int* la, int* n, int* kl, int* ku, double* AB, int* lab, int* 
     int upper_diags = *ku;
     int lower_diags = *kl;
     int result_matrix_size = *n;
-    int kv = 1;  // Position de la diagonale
+    int kv = 1; 
 
     printf("\nDébut dgbtrftridiag:\n");
     printf("nb_lines (lab) = %d\n", nb_lines);
@@ -201,10 +200,10 @@ void dgbmv_poisson1D(double *AB, double *RHS, double *X, int *la, int *lab, int 
 
 int test_dgbmv_poisson1D(void) {
   // Taille du problème
-  int la = 5;  // Taille de la matrice
-  int ku = 1;  // Nombre de sur-diagonales
-  int kl = 1;  // Nombre de sous-diagonales
-  int kv = 1;  // Position de la diagonale
+  int la = 5;  
+  int ku = 1;  
+  int kl = 1;  
+  int kv = 1;  
   int lab = kv + kl + ku + 1;
   
   // Allocation de mémoire
@@ -246,11 +245,11 @@ int test_dgbmv_poisson1D(void) {
 }
 
 int test_dgbtrftridiag(void) {
-    int la = 5;  // Taille de la matrice
-    int ku = 1;  // Nombre de sur-diagonales
-    int kl = 1;  // Nombre de sous-diagonales
-    int kv = 1;  // Position de la diagonale
-    int lab = 4; // kl + ku + kv + 1
+    int la = 5;  
+    int ku = 1;  
+    int kl = 1;  
+    int kv = 1;  
+    int lab = 4; 
     int *ipiv = (int *)malloc(sizeof(int)*la);
     int info;
     
@@ -332,7 +331,7 @@ void jacobi_tridiag(double *AB, double *RHS, double *X, int *lab, int *la, int *
     // Allocation des vecteurs temporaires
     double *X_new = (double *)malloc(sizeof(double)*(*la));
     double *AX = (double *)malloc(sizeof(double)*(*la));
-    int kv = 1;  // Position de la diagonale dans le format GB
+    int kv = 1;  
     
     int iter = 0;
     double resid = 1.0;
@@ -344,10 +343,6 @@ void jacobi_tridiag(double *AB, double *RHS, double *X, int *lab, int *la, int *
         
         // Mise à jour de X selon la méthode de Jacobi
         for(int i = 0; i < *la; i++) {
-            // Pour une matrice tridiagonale au format GB :
-            // AB[(*lab)*i + 0] : sous-diagonale
-            // AB[(*lab)*i + 1] : diagonale
-            // AB[(*lab)*i + 2] : sur-diagonale
             double diag = AB[(*lab)*i + 1];
             X_new[i] = RHS[i];
             
@@ -404,12 +399,12 @@ void gauss_seidel_tridiag(double *AB, double *RHS, double *X, int *lab, int *la,
             
             // Soustraction des termes déjà calculés (partie E)
             if(i > 0) {
-                sum -= AB[(*lab)*i + 0] * X[i-1];  // Utilise la nouvelle valeur X[i-1]
+                sum -= AB[(*lab)*i + 0] * X[i-1];  
             }
             
             // Soustraction des termes non encore calculés (partie F)
             if(i < *la-1) {
-                sum -= AB[(*lab)*i + 2] * X[i+1];  // Utilise l'ancienne valeur X[i+1]
+                sum -= AB[(*lab)*i + 2] * X[i+1];  
             }
             
             // Division par l'élément diagonal

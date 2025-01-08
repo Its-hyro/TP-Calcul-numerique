@@ -10,8 +10,6 @@
 #define GS 2
 
 int main(int argc,char *argv[])
-/* ** argc: Number of arguments */
-/* ** argv: Values of arguments */
 {
   int ierr;
   int jj;

@@ -35,19 +35,3 @@ int dgbtrftridiag(int *la, int *n, int *kl, int *ku, double *AB, int *lab, int *
 int test_dgbtrftridiag(void);
 void dgbmv_poisson1D(double *AB, double *RHS, double *X, int *la, int *lab, int *ku, int *kl, int *kv);
 int test_dgbmv_poisson1D(void);
-
-/**************************************************/
-/****************** ITERATIVE METHODS **************/
-/**************************************************/
-
-/**************************************************/
-/****************** JACOBI **************************/
-/**************************************************/
-
-void jacobi_tridiag(double *AB, double *RHS, double *X, int *lab, int *la, int *ku, int *kl, double *tol, int *maxit, double *resvec, int *nbite);
-
-/**************************************************/
-/****************** GAUSS-SEIDEL *******************/
-/**************************************************/
-
-void gauss_seidel_tridiag(double *AB, double *RHS, double *X, int *lab, int *la, int *ku, int *kl, double *tol, int *maxit, double *resvec, int *nbite);
