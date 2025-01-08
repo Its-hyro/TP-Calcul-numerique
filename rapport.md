@@ -14,45 +14,18 @@ Ce rapport explore les méthodes numériques pour la résolution de l'équation 
 ## Table des matières
 
 1. [Introduction](#introduction)
-   1.1. [Contexte et Objectifs](#contexte-et-objectifs)
-   1.2. [Plan du Rapport](#plan-du-rapport)
 
 2. [Théorie et Modélisation](#théorie-et-modélisation)
-   2.1. [Présentation du Problème](#présentation-du-problème)
-   2.2. [Formulation Mathématique](#formulation-mathématique)
-   2.3. [Hypothèses et Conditions aux Limites](#hypothèses-et-conditions-aux-limites)
-   2.4. [Analyse Théorique de la Stabilité](#analyse-théorique-de-la-stabilité)
 
 3. [Méthodes Numériques Directes](#méthodes-numériques-directes)
-   3.1. [Factorisation LU](#factorisation-lu)
-   3.2. [Implémentation avec BLAS/LAPACK](#implémentation-avec-blaslapack)
-   3.3. [Complexité et Performance](#complexité-et-performance)
-   3.4. [Limites des Méthodes Directes](#limites-des-méthodes-directes)
 
 4. [Méthodes Numériques Itératives](#méthodes-numériques-itératives)
-   4.1. [Présentation des Méthodes](#présentation-des-méthodes)
-      4.1.1. [Méthode de Richardson](#méthode-de-richardson)
-      4.1.2. [Méthode de Jacobi](#méthode-de-jacobi)
-      4.1.3. [Méthode de Gauss-Seidel](#méthode-de-gauss-seidel)
-   4.2. [Analyse des Résultats de Convergence](#analyse-des-résultats-de-convergence)
-   4.3. [Comparaison des Performances](#comparaison-des-performances)
-   4.4. [Conclusions sur les Méthodes Itératives](#conclusions-sur-les-méthodes-itératives)
 
 5. [Formats Alternatifs de Stockage](#formats-alternatifs-de-stockage)
-   5.1. [Présentation des Formats Bande, CSR, et CSC](#présentation-des-formats-bande-csr-et-csc)
-   5.2. [Implémentation dans les Méthodes Numériques](#implémentation-dans-les-méthodes-numériques)
-   5.3. [Comparaison en Termes de Mémoire et Performances](#comparaison-en-termes-de-mémoire-et-performances)
 
 6. [Conclusion et Perspectives](#conclusion-et-perspectives)
-   6.1. [Résumé des Résultats Clés](#résumé-des-résultats-clés)
-   6.2. [Limites des Approches Étudiées](#limites-des-approches-étudiées)
-   6.3. [Pistes de Recherche et Développements Futurs](#pistes-de-recherche-et-développements-futurs)
 
 7. [Annexes](#annexes)
-   7.1. [Code Source](#code-source)
-   7.2. [Instructions de Compilation et d'Exécution](#instructions-de-compilation-et-d'exécution)
-   7.3. [Bibliographie](#bibliographie)
-   7.4. [Glossaire des Termes Techniques](#glossaire-des-termes-techniques)
 
 ## Introduction
 ### Contexte et Objectifs
@@ -80,48 +53,47 @@ Pour atteindre ces objectifs de manière structurée, nous allons suivre le plan
 
 ### Plan du Rapport
 
-le rapport est organisé en 8 parties. 
+## 1. Introduction
+   - 1.1. Contexte et Objectifs
+   - 1.2. Plan du Rapport
 
-1. [Introduction](#introduction)
-   1.1. [Contexte et Objectifs](#contexte-et-objectifs)
-   1.2. [Plan du Rapport](#plan-du-rapport)
+## 2. Théorie et Modélisation
+   - 2.1. Présentation du Problème
+   - 2.2. Formulation Mathématique
+   - 2.3. Hypothèses et Conditions aux Limites
+   - 2.4. Analyse Théorique de la Stabilité
 
-2. [Théorie et Modélisation](#théorie-et-modélisation)
-   2.1. [Présentation du Problème](#présentation-du-problème)
-   2.2. [Formulation Mathématique](#formulation-mathématique)
-   2.3. [Hypothèses et Conditions aux Limites](#hypothèses-et-conditions-aux-limites)
-   2.4. [Analyse Théorique de la Stabilité](#analyse-théorique-de-la-stabilité)
+## 3. Méthodes Numériques Directes
+   - 3.1. Factorisation LU
+   - 3.2. Implémentation avec BLAS/LAPACK
+   - 3.3. Complexité et Performance
+   - 3.4. Limites des Méthodes Directes
 
-3. [Méthodes Numériques Directes](#méthodes-numériques-directes)
-   3.1. [Factorisation LU](#factorisation-lu)
-   3.2. [Implémentation avec BLAS/LAPACK](#implémentation-avec-blaslapack)
-   3.3. [Complexité et Performance](#complexité-et-performance)
-   3.4. [Limites des Méthodes Directes](#limites-des-méthodes-directes)
+## 4. Méthodes Numériques Itératives
+   - 4.1. Présentation des Méthodes
+        * 4.1.1. Méthode de Richardson
+        * 4.1.2. Méthode de Jacobi
+        * 4.1.3. Méthode de Gauss-Seidel
+   - 4.2. Analyse des Résultats de Convergence
+   - 4.3. Comparaison des Performances
+   - 4.4. Conclusions sur les Méthodes Itératives
 
-4. [Méthodes Numériques Itératives](#méthodes-numériques-itératives)
-   4.1. [Présentation des Méthodes](#présentation-des-méthodes)
-      4.1.1. [Méthode de Richardson](#méthode-de-richardson)
-      4.1.2. [Méthode de Jacobi](#méthode-de-jacobi)
-      4.1.3. [Méthode de Gauss-Seidel](#méthode-de-gauss-seidel)
-   4.2. [Analyse des Résultats de Convergence](#analyse-des-résultats-de-convergence)
-   4.3. [Comparaison des Performances](#comparaison-des-performances)
-   4.4. [Conclusions sur les Méthodes Itératives](#conclusions-sur-les-méthodes-itératives)
+## 5. Formats Alternatifs de Stockage
+   - 5.1. Présentation des Formats Bande, CSR, et CSC
+   - 5.2. Implémentation dans les Méthodes Numériques
+   - 5.3. Comparaison en Termes de Mémoire et Performances
 
-5. [Formats Alternatifs de Stockage](#formats-alternatifs-de-stockage)
-   5.1. [Présentation des Formats Bande, CSR, et CSC](#présentation-des-formats-bande-csr-et-csc)
-   5.2. [Implémentation dans les Méthodes Numériques](#implémentation-dans-les-méthodes-numériques)
-   5.3. [Comparaison en Termes de Mémoire et Performances](#comparaison-en-termes-de-mémoire-et-performances)
+## 6. Conclusion et Perspectives
+   - 6.1. Résumé des Résultats Clés
+   - 6.2. Limites des Approches Étudiées
+   - 6.3. Pistes de Recherche et Développements Futurs
 
-6. [Conclusion et Perspectives](#conclusion-et-perspectives)
-   6.1. [Résumé des Résultats Clés](#résumé-des-résultats-clés)
-   6.2. [Limites des Approches Étudiées](#limites-des-approches-étudiées)
-   6.3. [Pistes de Recherche et Développements Futurs](#pistes-de-recherche-et-développements-futurs)
+## 7. Annexes
+   - 7.1. Code Source
+   - 7.2. Instructions de Compilation et d'Exécution
+   - 7.3. Bibliographie
+   - 7.4. Glossaire des Termes Techniques
 
-7. [Annexes](#annexes)
-   7.1. [Code Source](#code-source)
-   7.2. [Instructions de Compilation et d'Exécution](#instructions-de-compilation-et-d'exécution)
-   7.3. [Bibliographie](#bibliographie)
-   7.4. [Glossaire des Termes Techniques](#glossaire-des-termes-techniques)
 
 Commençons notre étude par les fondements théoriques nécessaires à la compréhension du problème.
 
